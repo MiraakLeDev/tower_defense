@@ -7,6 +7,6 @@ int main()
     soldat = initialiser_unite();
     printf("hp : %f\n", soldat.vie_max);
     printf("hp : %f\n", soldat.vie_max);
-    printf("salut tom");
+    printf("salut tom\n");
     return 0;
 }
