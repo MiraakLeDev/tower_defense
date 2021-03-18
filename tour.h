@@ -6,6 +6,6 @@ typedef struct tour
     unsigned_int tir_min;
     unsigned_int tir_max;
     unsigned_int portee;
-    float vitesse_tire; caca
+    float vitesse_tire;
 } tour_t;
 #endif 

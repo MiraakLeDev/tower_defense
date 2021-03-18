@@ -11,4 +11,6 @@ typedef struct unite
 } unite_t;
 
 unite_t initialiser_unite();
+void mort_unite(unite_t *unite);
+
 #endif
