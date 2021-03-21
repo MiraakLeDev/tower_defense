@@ -6,9 +6,9 @@ typedef struct Liste
     cellule_tcp *premier;
 }liste_tcp;
 
-liste_tcp initialiser_liste_tcp(cellule_tcp* cellule);
+liste_tcp* initialiser_liste_tcp(cellule_tcp* cellule);
 void ajouter_cellule_tcp(liste_tcp* liste,cellule_tcp* cellule);
-void supprimer_cellule_tcp(liste_tcp* liste);
+void supprimer_cellule_tcp(liste_tcp* liste, cellule_tcp* aSupprimer);
 void afficher_liste_tcp(liste_tcp* liste);
 void supprimer_liste_tcp(liste_tcp* liste);
 #endif

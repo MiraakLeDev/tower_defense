@@ -11,61 +11,35 @@
 #include <stdio.h>      /* Pour perror */
 #include <unistd.h>     /* Pour close */
 #include <string.h>     /* Pour memset */
+#include <pthread.h>
+
 #include "liste_tcp.h"
-int main(int argc, char *argv[]) {
-  int fd, sockclient, cmp=0;
-  struct sockaddr_in adresse;
-  size_t taille;
-  liste_tcp liste;
-  cellule_tcp cellule,cellule2;
-  char *msg;
 
-  /* Vérification des arguments */
-  if(argc != 2) {
-    fprintf(stderr, "Usage : %s port\n", argv[0]);
-    fprintf(stderr, "Où :\n");
-    fprintf(stderr, "  port : le numéro de port d'écoute du serveur\n");
-    exit(EXIT_FAILURE);
-  }
+#define MAX_PARTIES 2
 
-  /* Création de la socket */
-  if((fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
-    perror("Erreur lors de la création de la socket ");
-    exit(EXIT_FAILURE);
-  }
+liste_tcp* liste_serveurs;
 
-  /* Création de l'adresse du serveur */
-  memset(&adresse, 0, sizeof(struct sockaddr_in));
-  adresse.sin_family = AF_INET;
-  adresse.sin_addr.s_addr = htonl(INADDR_ANY);
-  adresse.sin_port = htons(atoi(argv[1]));
-
-  /* Nommage de la socket */
-  if(bind(fd, (struct sockaddr*)&adresse, sizeof(struct sockaddr_in)) == -1) {
-    perror("Erreur lors du nommage de la socket ");
-    exit(EXIT_FAILURE);
-  }
-  cellule = initialiser_cellule_tcp("map","scenar");
-  cellule2 = initialiser_cellule_tcp("map2","scenar2");
-  liste = initialiser_liste_tcp(&cellule);
-  ajouter_cellule_tcp(&liste,&cellule2);
-  afficher_liste_tcp(&liste);
-    while (cmp != 4) {
+void* thread_partie(void* arg){
+    int cmp = 0;
+    char* msg;
+    size_t taille;
+    cellule_tcp* cellule = (cellule_tcp*) arg;
+    while (cmp < 4) {
         /* Mise en mode passif de la socket */
-        if (listen(fd, 1) == -1) {
+        if (listen(cellule->socketServeur, 1) == -1) {
             perror("Erreur lors de la mise en mode passif ");
             exit(EXIT_FAILURE);
         }
 
         /* Attente d'une connexion */
         printf("Serveur : attente de connexion...\n");
-        if ((sockclient = accept(fd, NULL, NULL)) == -1) {
+        if ((cellule->socketClient[cmp] = accept(cellule->socketServeur, NULL, NULL)) == -1) {
             perror("Erreur lors de la demande de connexion ");
             exit(EXIT_FAILURE);
         }
 
         /* Lecture du message */
-        if (read(sockclient, &taille, sizeof(size_t)) == -1) {
+        if (read(cellule->socketClient[cmp], &taille, sizeof(size_t)) == -1) {
             perror("Erreur lors de la lecture de la taille du message ");
             exit(EXIT_FAILURE);
         }
@@ -73,27 +47,41 @@ int main(int argc, char *argv[]) {
             perror("Erreur lors de l'allocation mémoire pour le message ");
             exit(EXIT_FAILURE);
         }
-        if (read(sockclient, msg, sizeof(char) * taille) == -1) {
+        if (read(cellule->socketClient[cmp], msg, sizeof(char) * taille) == -1) {
             perror("Erreur lors de la lecture de la taille du message ");
             exit(EXIT_FAILURE);
         }
         printf("Serveur : message recu '%s'.\n", msg);
         cmp++;
     }
-  /* Fermeture des sockets */
-  if(close(sockclient) == -1) {
-    perror("Erreur lors de la fermeture de la socket de communication ");
-    exit(EXIT_FAILURE);
-  }
-  if(close(fd) == -1) {
-    perror("Erreur lors de la fermeture de la socket de connexion ");
-    exit(EXIT_FAILURE);
-  }
+    supprimer_cellule_tcp(liste_serveurs ,cellule);
+    pthread_exit(NULL);
+}
 
-  /* Liberation mémoire */
-  free(msg);
+int main(int argc, char *argv[]) {
+    cellule_tcp* cellule;
+    int statut = 0, i = 0;
+    pthread_t thread[MAX_PARTIES];
 
-  printf("Serveur terminé.\n");
+    liste_serveurs = initialiser_liste_tcp(NULL);
+
+    while(i<MAX_PARTIES){
+        cellule = initialiser_cellule_tcp("127.0.0.1",(49155+i),"map","scenar");
+        statut = pthread_create(&thread[i], NULL, thread_partie, (void*) cellule);
+        if (statut != 0) {
+            printf("Problème création du thread compteur");
+            exit(EXIT_FAILURE);
+        }
+        ajouter_cellule_tcp(liste_serveurs, cellule);
+        i++;
+    }
+
+    for (i = 0; i < MAX_PARTIES; ++i) {
+        pthread_join(thread[i], NULL);
+        printf("THREAD %d TERMINE\n",i);
+    }
+
+    printf("Serveur terminé.\n");
 
   return EXIT_SUCCESS;
 }

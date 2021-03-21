@@ -5,28 +5,38 @@
 
 
 
-liste_tcp initialiser_liste_tcp(cellule_tcp* cellule){
-    liste_tcp liste;
-    liste.premier = cellule;
+liste_tcp* initialiser_liste_tcp(cellule_tcp* cellule){
+    liste_tcp* liste = malloc(sizeof(liste_tcp));
+    liste->premier = cellule;
     return liste;
 }
 
 void ajouter_cellule_tcp(liste_tcp* liste,cellule_tcp* cellule){
     cellule->suivant = liste->premier;
+
+    if(liste->premier != NULL){
+        liste->premier->prec=cellule;
+    }
     liste->premier = cellule;
+    cellule->prec = NULL;
 }
 
-void supprimer_cellule_tcp(liste_tcp* liste){
+void supprimer_cellule_tcp(liste_tcp* liste, cellule_tcp* aSupprimer){
     if (liste == NULL)
     {
         exit(EXIT_FAILURE);
     }
-    if (liste->premier != NULL)
-    {
-        cellule_tcp *aSupprimer = liste->premier;
-        liste->premier = liste->premier->suivant;
-        free(aSupprimer);
+
+    if(aSupprimer->prec != NULL){
+        aSupprimer->prec->suivant =  aSupprimer->suivant;
+    }else{
+        liste->premier = aSupprimer->suivant;
     }
+
+    if (aSupprimer->suivant != NULL){
+        aSupprimer->suivant->prec = aSupprimer->prec;
+    }
+    detruire_cellule_tcp(aSupprimer);
 }
 
 void afficher_liste_tcp(liste_tcp* liste){

@@ -160,6 +160,10 @@ int main(int argc, char *argv[]) {
                     exit(EXIT_FAILURE);
                 }
             }
+
+            else if(requete.action == 3){
+                execv
+            }
         }
     }
     /* Fermeture de la socket */
