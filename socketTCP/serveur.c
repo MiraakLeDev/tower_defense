@@ -19,11 +19,10 @@
 
 liste_tcp* liste_serveurs;
 
-void* thread_partie(void* arg){
+int fork_partie(cellule_tcp* cellule){
     int cmp = 0;
     char* msg;
     size_t taille;
-    cellule_tcp* cellule = (cellule_tcp*) arg;
     while (cmp < 4) {
         /* Mise en mode passif de la socket */
         if (listen(cellule->socketServeur, 1) == -1) {
@@ -54,8 +53,8 @@ void* thread_partie(void* arg){
         printf("Serveur : message recu '%s'.\n", msg);
         cmp++;
     }
-    supprimer_cellule_tcp(liste_serveurs ,cellule);
-    pthread_exit(NULL);
+    supprimer_cellule_tcp(liste_serveurs, cellule);
+    exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char *argv[]) {
@@ -67,11 +66,7 @@ int main(int argc, char *argv[]) {
 
     while(i<MAX_PARTIES){
         cellule = initialiser_cellule_tcp("127.0.0.1",(49155+i),"map","scenar");
-        statut = pthread_create(&thread[i], NULL, thread_partie, (void*) cellule);
-        if (statut != 0) {
-            printf("Problème création du thread compteur");
-            exit(EXIT_FAILURE);
-        }
+
         ajouter_cellule_tcp(liste_serveurs, cellule);
         i++;
     }

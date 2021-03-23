@@ -12,8 +12,11 @@
 #include <unistd.h>      /* Pour close */
 #include <errno.h>       /* Pour errno */
 #include <dirent.h>      /* Pour parcourir les dossiers */
+#include <sys/wait.h>
+#include <time.h>
 
 #include "include.h"
+#include "liste_tcp.h"
 
 #define NB_MAPS 3
 #define NB_SCENAR 3
@@ -42,7 +45,6 @@ void recup_data(DIR* d, char* nom_dossier, char contenu[][30]){
                 /* on filtre les fichiers .bin */
                 if(strcmp(name + namelen - 4, ".bin") == 0) {
                     name[namelen - 4] = 0;
-                    printf("%s\n", name);
                     strcpy(contenu[i], name);
                     i++;
                 }
@@ -56,6 +58,47 @@ void recup_data(DIR* d, char* nom_dossier, char contenu[][30]){
         exit(EXIT_FAILURE);
     }
 }
+
+
+/**** PARTIE SERVEUR TCP ****/
+int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule){
+    int cmp = 0;
+    char* msg;
+    size_t taille;
+    while (cmp < 4) {
+        /* Mise en mode passif de la socket */
+        if (listen(cellule->socketServeur, 1) == -1) {
+            perror("Erreur lors de la mise en mode passif ");
+            exit(EXIT_FAILURE);
+        }
+
+        /* Attente d'une connexion */
+        printf("Serveur : attente de connexion...\n");
+        if ((cellule->socketClient[cmp] = accept(cellule->socketServeur, NULL, NULL)) == -1) {
+            perror("Erreur lors de la demande de connexion ");
+            exit(EXIT_FAILURE);
+        }
+
+        /* Lecture du message */
+        if (read(cellule->socketClient[cmp], &taille, sizeof(size_t)) == -1) {
+            perror("Erreur lors de la lecture de la taille du message ");
+            exit(EXIT_FAILURE);
+        }
+        if ((msg = (char *) malloc(sizeof(char) * taille)) == NULL) {
+            perror("Erreur lors de l'allocation mémoire pour le message ");
+            exit(EXIT_FAILURE);
+        }
+        if (read(cellule->socketClient[cmp], msg, sizeof(char) * taille) == -1) {
+            perror("Erreur lors de la lecture de la taille du message ");
+            exit(EXIT_FAILURE);
+        }
+        printf("Serveur : message recu '%s'.\n", msg);
+        cmp++;
+    }
+    supprimer_cellule_tcp(liste_serveurs ,cellule);
+    return 0;
+}
+
 
 int main(int argc, char *argv[]) {
 
@@ -71,6 +114,11 @@ int main(int argc, char *argv[]) {
     char scenars[NB_SCENAR][30];    /* les scénarios du jeux */
 
     struct sigaction action_signal;
+
+    /**** SERVEURS TCP ****/
+    pid_t pid_serveur;
+    liste_tcp* liste_serveurs;
+    cellule_tcp* cellule;
 
     /* Récupération des arguments */
     if(argc != 2) {
@@ -106,13 +154,10 @@ int main(int argc, char *argv[]) {
     adresseServeur.sin_family = AF_INET;
     adresseServeur.sin_port = htons(atoi(argv[1]));
     adresseServeur.sin_addr.s_addr = inet_addr("127.0.0.1");
-    /*
-    adresseServeur.sin_addr.s_addr = htonl(INADDR_ANY);
-    */
+
 
     /* Préparation de la récupération de l'adresse du client */
     memset(&adresseClient, 0, sizeof(struct sockaddr_in));
-
 
     /* Nommage de la socket */
     if(bind(sockfd, (struct sockaddr*)&adresseServeur, sizeof(struct sockaddr_in)) == -1) {
@@ -121,6 +166,10 @@ int main(int argc, char *argv[]) {
     }
 
     taille_socket = sizeof(adresseClient);
+
+    /**** INITIALISATION LISTE DES SERVEURS TCP ****/
+    liste_serveurs = initialiser_liste_tcp(NULL);
+    srand (time (NULL));
 
     while (stop == 0) {
         /* Attente de la requête du client */
@@ -162,7 +211,16 @@ int main(int argc, char *argv[]) {
             }
 
             else if(requete.action == 3){
-                execv
+                if ((pid_serveur = fork()) == 0) {
+                    cellule = initialiser_cellule_tcp("127.0.0.1", rand() % 64511 + 1024, "map", "scenar");
+                    ajouter_cellule_tcp(liste_serveurs, cellule);
+                    fork_partie(liste_serveurs, cellule);
+                    exit(EXIT_SUCCESS);
+                }
+                else if(pid_serveur == -1){
+                    perror("ERREUR : Création fils TCP impossible\n");
+                    exit(EXIT_FAILURE);
+                }
             }
         }
     }

@@ -3,7 +3,7 @@
 #
 
 EXEC = serveur client
-OBJETS = 
+OBJETS = cellule_tcp.o liste_tcp.o
 NOM_PROJET = socketUDP
 
 #
@@ -82,3 +82,5 @@ archive: clean
 # DEPENDANCES
 serveur.o: serveur.c
 client.o: client.c
+cellule_tcp.o : cellule_tcp.c cellule_tcp.h
+liste_tcp.o : liste_tcp.c liste_tcp.h
