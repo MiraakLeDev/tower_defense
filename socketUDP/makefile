@@ -2,7 +2,7 @@
 # CONFIGURATION GENERALE
 #
 
-EXEC = serveur client
+EXEC = serveur client_udp client_tcp
 OBJETS = cellule_tcp.o liste_tcp.o
 NOM_PROJET = socketUDP
 
@@ -24,7 +24,7 @@ OBJETS_O = $(OBJETS) $(EXEC_O)
 #
 
 CC = gcc
-CCFLAGS = -Wall -O3 -ansi -pedantic -Werror -D _XOPEN_SOURCE
+CCFLAGS = -Wall -O3 -ansi -pedantic -Werror -D _XOPEN_SOURCE -pthread
 CCLIBS =
 
 #
@@ -81,6 +81,7 @@ archive: clean
 
 # DEPENDANCES
 serveur.o: serveur.c
-client.o: client.c
+client_udp.o: client_udp.c
+client_tcp.o: client_tcp.c
 cellule_tcp.o : cellule_tcp.c cellule_tcp.h
 liste_tcp.o : liste_tcp.c liste_tcp.h

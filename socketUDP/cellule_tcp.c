@@ -44,7 +44,7 @@ void modif_cellule_tcp(cellule_tcp* cellule_tcp, int sockclient, struct sockaddr
 void detruire_cellule_tcp(cellule_tcp* cellule)
 {
     int i;
-    for (i = 0; i < 4; ++i) {
+    for (i = 0; i < MAX_JOUEURS; ++i) {
         /* Fermeture des sockets */
         if(close(cellule->socketClient[i]) == -1) {
             perror("Erreur lors de la fermeture de la socket de communication ");

@@ -1,9 +1,12 @@
 #ifndef SOCKETTCP_CELLULE_TCP_H
 #define SOCKETTCP_CELLULE_TCP_H
 #include <arpa/inet.h>
+
+#define MAX_JOUEURS 4
+
 typedef struct cellule
 {
-    int socketClient[4];
+    int socketClient[MAX_JOUEURS];
     int socketServeur;
     struct sockaddr_in adresseServeur;
     char* map;

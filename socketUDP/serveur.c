@@ -21,6 +21,7 @@
 #define NB_MAPS 3
 #define NB_SCENAR 3
 
+
 int stop = 0;
 void handler(int signum)
 {
@@ -62,10 +63,10 @@ void recup_data(DIR* d, char* nom_dossier, char contenu[][30]){
 
 /**** PARTIE SERVEUR TCP ****/
 int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule){
-    int cmp = 0;
+    int cmp = MAX_JOUEURS;
     char* msg;
     size_t taille;
-    while (cmp < 4) {
+    while (cmp > 0) {
         /* Mise en mode passif de la socket */
         if (listen(cellule->socketServeur, 1) == -1) {
             perror("Erreur lors de la mise en mode passif ");
@@ -73,7 +74,7 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule){
         }
 
         /* Attente d'une connexion */
-        printf("Serveur : attente de connexion...\n");
+        printf("Serveur : attente de connexion de %d joueurs...\n", cmp);
         if ((cellule->socketClient[cmp] = accept(cellule->socketServeur, NULL, NULL)) == -1) {
             perror("Erreur lors de la demande de connexion ");
             exit(EXIT_FAILURE);
@@ -93,7 +94,7 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule){
             exit(EXIT_FAILURE);
         }
         printf("Serveur : message recu '%s'.\n", msg);
-        cmp++;
+        cmp--;
     }
     supprimer_cellule_tcp(liste_serveurs ,cellule);
     return 0;
@@ -210,9 +211,10 @@ int main(int argc, char *argv[]) {
                 }
             }
 
+            /**** DEMANDE NOUVELLE PARTIE ****/
             else if(requete.action == 3){
                 if ((pid_serveur = fork()) == 0) {
-                    cellule = initialiser_cellule_tcp("127.0.0.1", rand() % 64511 + 1024, "map", "scenar");
+                    cellule = initialiser_cellule_tcp("127.0.0.1", rand() % 64511 + 1024, maps[requete.choix_map], scenars[requete.choix_scenar]);
                     ajouter_cellule_tcp(liste_serveurs, cellule);
                     fork_partie(liste_serveurs, cellule);
                     exit(EXIT_SUCCESS);
@@ -221,6 +223,11 @@ int main(int argc, char *argv[]) {
                     perror("ERREUR : Création fils TCP impossible\n");
                     exit(EXIT_FAILURE);
                 }
+            }
+
+            /**** LISTE PARTIES ****/
+            else if(requete.action == 4){
+
             }
         }
     }
