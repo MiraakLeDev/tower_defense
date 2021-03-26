@@ -10,6 +10,7 @@
 #include <arpa/inet.h>   /* Pour sockaddr_in */
 #include <string.h>      /* Pour memset */
 #include <unistd.h>      /* Pour close */
+#include <fcntl.h>
 #include <errno.h>       /* Pour errno */
 #include <dirent.h>      /* Pour parcourir les dossiers */
 #include <sys/wait.h>
@@ -17,6 +18,7 @@
 
 #include "include.h"
 #include "liste_tcp.h"
+#include "jeu.h"
 
 #define NB_MAPS 3
 #define NB_SCENAR 3
@@ -62,10 +64,89 @@ void recup_data(DIR* d, char* nom_dossier, char contenu[][30]){
 
 
 /**** PARTIE SERVEUR TCP ****/
+
+/* Fonction qui remplie la matrice JEU */
+void set_map(jeu_t* jeu,int fichier){
+    size_t taille_texte;
+    unsigned char case_terrain;
+    int i=0,j=0;
+
+    lseek(fichier,0,SEEK_SET);
+    if(read(fichier,&taille_texte,sizeof(size_t)) < 0){
+        perror("ERREUR : Lecture de la map \n");
+        exit(EXIT_FAILURE);
+    }
+
+    lseek(fichier,taille_texte,SEEK_CUR);
+    while (read(fichier,&case_terrain,sizeof(unsigned char)) > 0) {
+        if(j == 15){
+            j=0;
+            i++;
+        }
+        jeu->carte[i][j] = case_terrain;
+        j++;
+    }
+}
+
+void set_scenar(jeu_t* jeu,int fichier){
+    size_t taille_texte;
+/*
+    long type;
+    unsigned int donnees_int;
+    unsigned char donnees_char;
+    char message[255];
+*/
+    lseek(fichier,0,SEEK_SET);
+    if(read(fichier,&taille_texte,sizeof(size_t)) < 0){
+        perror("ERREUR : Lecture du scénario \n");
+        exit(EXIT_FAILURE);
+    }
+
+    if(read(fichier,jeu->description,taille_texte) < 0){
+        perror("ERREUR : Lecture du scénario \n");
+        exit(EXIT_FAILURE);
+    }
+    printf("description scenario : %s \n",jeu->description);
+/*
+    while (read(fichier,&type,sizeof(long)) > 0) {
+        if(read(fichier,jeu->description,taille_texte) < 0){
+            perror("ERREUR : Lecture du scénario \n");
+            exit(EXIT_FAILURE);
+        }
+    }
+    */
+}
+
+
+
+
 int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule){
-    int cmp = MAX_JOUEURS;
-    char* msg;
-    size_t taille;
+    int cmp = MAX_JOUEURS,fichier;
+    char map_nom[MAX_CHAR+7] = "cartes/";
+    char scenar_nom[MAX_CHAR+10] = "scenarios/";
+    jeu_t jeu;
+
+    /* CHARGEMENT DE LA CARTE */
+    strcat(map_nom, cellule->map);
+    strcat(map_nom, ".bin");
+    if((fichier = open(map_nom, O_RDWR)) == -1) {
+        perror("Erreur lors de l'ouverture du fichier ");
+        exit(EXIT_FAILURE);
+    }
+    set_map(&jeu, fichier);
+    close(fichier);
+
+    /* CHARGEMENT DU SCENARIO */
+    strcat(scenar_nom, cellule->scenar);
+    strcat(scenar_nom, ".bin");
+    if((fichier = open(scenar_nom, O_RDWR)) == -1) {
+        perror("Erreur lors de l'ouverture du fichier ");
+        exit(EXIT_FAILURE);
+    }
+    set_scenar(&jeu, fichier);
+    close(fichier);
+
+    /* On attend la connexion des quatres joueurs avant de commencer la partie */
     while (cmp > 0) {
         /* Mise en mode passif de la socket */
         if (listen(cellule->socketServeur, 1) == -1) {
@@ -79,21 +160,6 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule){
             perror("Erreur lors de la demande de connexion ");
             exit(EXIT_FAILURE);
         }
-
-        /* Lecture du message */
-        if (read(cellule->socketClient[cmp], &taille, sizeof(size_t)) == -1) {
-            perror("Erreur lors de la lecture de la taille du message ");
-            exit(EXIT_FAILURE);
-        }
-        if ((msg = (char *) malloc(sizeof(char) * taille)) == NULL) {
-            perror("Erreur lors de l'allocation mémoire pour le message ");
-            exit(EXIT_FAILURE);
-        }
-        if (read(cellule->socketClient[cmp], msg, sizeof(char) * taille) == -1) {
-            perror("Erreur lors de la lecture de la taille du message ");
-            exit(EXIT_FAILURE);
-        }
-        printf("Serveur : message recu '%s'.\n", msg);
         cmp--;
     }
     supprimer_cellule_tcp(liste_serveurs ,cellule);
@@ -101,18 +167,24 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule){
 }
 
 
-int main(int argc, char *argv[]) {
 
+
+
+
+int main(int argc, char *argv[]) {
     int sockfd, i=0;
     int taille_socket = 0;
 
     struct sockaddr_in adresseServeur, adresseClient;
     requete_udp requete;
     reponse_udp reponse;
+    reponse_2_udp reponse_serveur;
 
     DIR* d = NULL;
     char maps[NB_MAPS][30];         /* les maps du jeux */
     char scenars[NB_SCENAR][30];    /* les scénarios du jeux */
+    char adresse_tcp[16] = "127.0.0.1";
+    unsigned int port_tcp;
 
     struct sigaction action_signal;
 
@@ -213,9 +285,21 @@ int main(int argc, char *argv[]) {
 
             /**** DEMANDE NOUVELLE PARTIE ****/
             else if(requete.action == 3){
+                port_tcp = rand() % 64511 + 1024;
                 if ((pid_serveur = fork()) == 0) {
-                    cellule = initialiser_cellule_tcp("127.0.0.1", rand() % 64511 + 1024, maps[requete.choix_map], scenars[requete.choix_scenar]);
+                    cellule = initialiser_cellule_tcp(adresse_tcp, port_tcp, maps[requete.choix_map], scenars[requete.choix_scenar]);
                     ajouter_cellule_tcp(liste_serveurs, cellule);
+                    printf("Le serveur TCP a démarré sur le port : %d\n", port_tcp);
+
+                    /* On prépare la réponse pour le client -> données : adresse du serveur TCP + port */
+                    reponse_serveur.port = port_tcp;
+                    strcpy(reponse_serveur.adresse, adresse_tcp);
+                    if(sendto(sockfd, &reponse_serveur, sizeof(reponse_2_udp), 0, (struct sockaddr*)&adresseClient, sizeof(struct sockaddr_in)) == -1) {
+                        perror("Erreur lors de l'envoi du message ");
+                        exit(EXIT_FAILURE);
+                    }
+
+                    /* On lance la partie */
                     fork_partie(liste_serveurs, cellule);
                     exit(EXIT_SUCCESS);
                 }
@@ -229,6 +313,7 @@ int main(int argc, char *argv[]) {
             else if(requete.action == 4){
 
             }
+            printf("\n\n");
         }
     }
     /* Fermeture de la socket */

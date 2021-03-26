@@ -12,18 +12,18 @@
 #include <unistd.h>     /* Pour close */
 #include <string.h>     /* Pour memset */
 
+#include <time.h>
+
 int main(int argc, char *argv[]) {
   int fd;
   struct sockaddr_in adresse;
-  size_t taille;
 
   /* Vérification des arguments */
-  if(argc != 4) {
-    fprintf(stderr, "Usage : %s adresseServeur portServeur message\n", argv[0]);
+  if(argc != 2) {
+    fprintf(stderr, "Usage : %s adresseServeur portServeur\n", argv[0]);
     fprintf(stderr, "Où :\n");
     fprintf(stderr, "  adresseServeur : adresse IPv4 du serveur\n");
     fprintf(stderr, "  portServeur    : numéro de port du serveur\n");
-    fprintf(stderr, "  message        : le message à envoyer\n");
     exit(EXIT_FAILURE);
   }
 
@@ -33,14 +33,17 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
+
   /* Remplissage de la structure */
   memset(&adresse, 0, sizeof(struct sockaddr_in));
   adresse.sin_family = AF_INET;
-  adresse.sin_port = htons(atoi(argv[2]));
-  if(inet_pton(AF_INET, argv[1], &adresse.sin_addr.s_addr) != 1) {
+  adresse.sin_port = htons(atoi(argv[1]));
+  if(inet_pton(AF_INET, argv[0], &adresse.sin_addr.s_addr) != 1) {
     perror("Erreur lors de la conversion de l'adresse ");
     exit(EXIT_FAILURE);
   }
+
+  sleep(2);
 
   /* Connexion au serveur */
   if(connect(fd, (struct sockaddr*)&adresse, sizeof(adresse)) == -1) {
@@ -48,17 +51,21 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  /* Envoi du message au serveur */
-  taille = strlen(argv[3]) + 1;
+  printf("Je suis connecté au serveur TCP");
+
+
+  /* Envoi du message au serveur
+  taille = strlen(argv[2]) + 1;
   if(write(fd, &taille, sizeof(size_t)) == -1) {
     perror("Erreur lors de l'envoi de la taille du message ");
     exit(EXIT_FAILURE);
   }
-  if(write(fd, argv[3], sizeof(char) * taille) == -1) {
+  if(write(fd, argv[2], sizeof(char) * taille) == -1) {
     perror("Erreur lors de l'envoi du message ");
     exit(EXIT_FAILURE);
   }
   printf("Client : message envoyé.\n");
+   */
 
   /* Fermeture de la socket */
   if(close(fd) == -1) {

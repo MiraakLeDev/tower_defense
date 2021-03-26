@@ -80,7 +80,7 @@ archive: clean
 	@echo "Termine."
 
 # DEPENDANCES
-serveur.o: serveur.c
+serveur.o: serveur.c jeu.h
 client_udp.o: client_udp.c
 client_tcp.o: client_tcp.c
 cellule_tcp.o : cellule_tcp.c cellule_tcp.h
