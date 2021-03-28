@@ -12,6 +12,9 @@
 #include <unistd.h>     /* Pour close */
 #include <string.h>     /* Pour memset */
 #include <pthread.h>
+#include <fcntl.h>
+#include <sys/wait.h>
+
 
 #include "liste_tcp.h"
 
@@ -25,6 +28,7 @@ int fork_partie(cellule_tcp* cellule){
     size_t taille;
     while (cmp < 4) {
         /* Mise en mode passif de la socket */
+        printf("socket = %d\n", cellule->socketServeur);
         if (listen(cellule->socketServeur, 1) == -1) {
             perror("Erreur lors de la mise en mode passif ");
             exit(EXIT_FAILURE);
@@ -51,6 +55,7 @@ int fork_partie(cellule_tcp* cellule){
             exit(EXIT_FAILURE);
         }
         printf("Serveur : message recu '%s'.\n", msg);
+        printf("socket = %d\n", cellule->socketServeur);
         cmp++;
     }
     supprimer_cellule_tcp(liste_serveurs, cellule);
@@ -59,23 +64,20 @@ int fork_partie(cellule_tcp* cellule){
 
 int main(int argc, char *argv[]) {
     cellule_tcp* cellule;
-    int statut = 0, i = 0;
-    pthread_t thread[MAX_PARTIES];
+    int i = 0;
+    pid_t fils;
 
     liste_serveurs = initialiser_liste_tcp(NULL);
 
     while(i<MAX_PARTIES){
-        cellule = initialiser_cellule_tcp("127.0.0.1",(49155+i),"map","scenar");
-
+        cellule = initialiser_cellule_tcp("127.0.0.1",(49175+i),"map","scenar");
         ajouter_cellule_tcp(liste_serveurs, cellule);
+        if ((fils = fork()) == 0){
+            fork_partie(cellule);
+        }
         i++;
     }
-
-    for (i = 0; i < MAX_PARTIES; ++i) {
-        pthread_join(thread[i], NULL);
-        printf("THREAD %d TERMINE\n",i);
-    }
-
+    wait(NULL);
     printf("Serveur terminé.\n");
 
   return EXIT_SUCCESS;

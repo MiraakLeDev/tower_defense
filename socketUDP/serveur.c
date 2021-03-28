@@ -117,19 +117,16 @@ void set_scenar(jeu_t* jeu,int fichier){
     */
 }
 
-
-
-
-int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule){
-    int cmp = MAX_JOUEURS,fichier;
-    char map_nom[MAX_CHAR+7] = "cartes/";
-    char scenar_nom[MAX_CHAR+10] = "scenarios/";
+int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule) {
+    int cmp = MAX_JOUEURS - 1, fichier;
+    char map_nom[MAX_CHAR + 7] = "cartes/";
+    char scenar_nom[MAX_CHAR + 10] = "scenarios/";
     jeu_t jeu;
 
     /* CHARGEMENT DE LA CARTE */
     strcat(map_nom, cellule->map);
     strcat(map_nom, ".bin");
-    if((fichier = open(map_nom, O_RDWR)) == -1) {
+    if ((fichier = open(map_nom, O_RDWR)) == -1) {
         perror("Erreur lors de l'ouverture du fichier ");
         exit(EXIT_FAILURE);
     }
@@ -139,7 +136,7 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule){
     /* CHARGEMENT DU SCENARIO */
     strcat(scenar_nom, cellule->scenar);
     strcat(scenar_nom, ".bin");
-    if((fichier = open(scenar_nom, O_RDWR)) == -1) {
+    if ((fichier = open(scenar_nom, O_RDWR)) == -1) {
         perror("Erreur lors de l'ouverture du fichier ");
         exit(EXIT_FAILURE);
     }
@@ -148,27 +145,33 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule){
 
     /* On attend la connexion des quatres joueurs avant de commencer la partie */
     while (cmp > 0) {
+        printf("socket avant listen = %d\n", cellule->socketServeur);
+
         /* Mise en mode passif de la socket */
         if (listen(cellule->socketServeur, 1) == -1) {
             perror("Erreur lors de la mise en mode passif ");
             exit(EXIT_FAILURE);
         }
 
+        printf("socket après listen = %d\n", cellule->socketServeur);
+
+        /**** ERREUR ICI ****/
+
         /* Attente d'une connexion */
-        printf("Serveur : attente de connexion de %d joueurs...\n", cmp);
+        printf("Serveur port = %d : attente de connexion de %d joueurs...\n",ntohs(cellule->adresseServeur.sin_port),cmp+1);
         if ((cellule->socketClient[cmp] = accept(cellule->socketServeur, NULL, NULL)) == -1) {
             perror("Erreur lors de la demande de connexion ");
             exit(EXIT_FAILURE);
         }
+
+        printf("socket après accept = %d\n", cellule->socketServeur);
+        printf("retour de accept = %d\n", cellule->socketClient[cmp]);
+
         cmp--;
     }
-    supprimer_cellule_tcp(liste_serveurs ,cellule);
+    supprimer_cellule_tcp(liste_serveurs, cellule);
     return 0;
 }
-
-
-
-
 
 
 int main(int argc, char *argv[]) {

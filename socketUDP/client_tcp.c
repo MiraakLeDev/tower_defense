@@ -15,63 +15,64 @@
 #include <time.h>
 
 int main(int argc, char *argv[]) {
-  int fd;
-  struct sockaddr_in adresse;
+    int fd;
+    struct sockaddr_in adresse;
 
-  /* Vérification des arguments */
-  if(argc != 2) {
-    fprintf(stderr, "Usage : %s adresseServeur portServeur\n", argv[0]);
-    fprintf(stderr, "Où :\n");
-    fprintf(stderr, "  adresseServeur : adresse IPv4 du serveur\n");
-    fprintf(stderr, "  portServeur    : numéro de port du serveur\n");
-    exit(EXIT_FAILURE);
-  }
+    /* Vérification des arguments */
+    if(argc != 2) {
+        fprintf(stderr, "Usage : %s adresseServeur portServeur\n", argv[0]);
+        fprintf(stderr, "Où :\n");
+        fprintf(stderr, "  adresseServeur : adresse IPv4 du serveur\n");
+        fprintf(stderr, "  portServeur    : numéro de port du serveur\n");
+        exit(EXIT_FAILURE);
+    }
 
-  /* Création de la socket */
-  if((fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
-    perror("Erreur lors de la création de la socket ");
-    exit(EXIT_FAILURE);
-  }
+    /* Création de la socket */
+    if((fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
+        perror("Erreur lors de la création de la socket ");
+        exit(EXIT_FAILURE);
+    }
 
+    printf("addr : %s port : %s",  argv[0],  argv[1]);
 
-  /* Remplissage de la structure */
-  memset(&adresse, 0, sizeof(struct sockaddr_in));
-  adresse.sin_family = AF_INET;
-  adresse.sin_port = htons(atoi(argv[1]));
-  if(inet_pton(AF_INET, argv[0], &adresse.sin_addr.s_addr) != 1) {
-    perror("Erreur lors de la conversion de l'adresse ");
-    exit(EXIT_FAILURE);
-  }
+    /* Remplissage de la structure */
+    memset(&adresse, 0, sizeof(struct sockaddr_in));
+    adresse.sin_family = AF_INET;
+    adresse.sin_port = htons(atoi(argv[1]));
+    if(inet_pton(AF_INET, argv[0], &adresse.sin_addr.s_addr) != 1) {
+        perror("Erreur lors de la conversion de l'adresse ");
+        exit(EXIT_FAILURE);
+    }
 
-  sleep(2);
+    sleep(5);
 
-  /* Connexion au serveur */
-  if(connect(fd, (struct sockaddr*)&adresse, sizeof(adresse)) == -1) {
-    perror("Erreur lors de la connexion ");
-    exit(EXIT_FAILURE);
-  }
+    /* Connexion au serveur */
+    if(connect(fd, (struct sockaddr*)&adresse, sizeof(adresse)) == -1) {
+        perror("Erreur lors de la connexion ");
+        exit(EXIT_FAILURE);
+    }
 
-  printf("Je suis connecté au serveur TCP");
+    printf("Je suis connecté au serveur TCP");
+    sleep(5);
 
-
-  /* Envoi du message au serveur
-  taille = strlen(argv[2]) + 1;
-  if(write(fd, &taille, sizeof(size_t)) == -1) {
+    /* Envoi du message au serveur
+    taille = strlen(argv[2]) + 1;
+    if(write(fd, &taille, sizeof(size_t)) == -1) {
     perror("Erreur lors de l'envoi de la taille du message ");
     exit(EXIT_FAILURE);
-  }
-  if(write(fd, argv[2], sizeof(char) * taille) == -1) {
+    }
+    if(write(fd, argv[2], sizeof(char) * taille) == -1) {
     perror("Erreur lors de l'envoi du message ");
     exit(EXIT_FAILURE);
-  }
-  printf("Client : message envoyé.\n");
-   */
+    }
+    printf("Client : message envoyé.\n");
+    */
 
-  /* Fermeture de la socket */
-  if(close(fd) == -1) {
-    perror("Erreur lors de la fermeture de la socket ");
-    exit(EXIT_FAILURE);
-  }
+    /* Fermeture de la socket */
+    if(close(fd) == -1) {
+        perror("Erreur lors de la fermeture de la socket ");
+        exit(EXIT_FAILURE);
+    }
 
-  return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }

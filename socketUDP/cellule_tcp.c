@@ -21,7 +21,7 @@ cellule_tcp* initialiser_cellule_tcp(char* adresse, int port, char* map, char* s
     /* Création de l'adresse du serveur */
     memset(&cellule->adresseServeur, 0, sizeof(struct sockaddr_in));
     cellule->adresseServeur.sin_family = AF_INET;
-    cellule->adresseServeur.sin_addr.s_addr = inet_addr(adresse);
+    cellule->adresseServeur.sin_addr.s_addr = inet_addr("127.0.0.1");
     cellule->adresseServeur.sin_port = htons(port);
 
     /* Nommage de la socket */

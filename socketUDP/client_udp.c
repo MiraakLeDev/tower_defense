@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
 
     action = atoi(argv[3]);
     switch (action) {
-        /* DEMANDE DE CARTES */
+            /* DEMANDE DE CARTES */
         case 1:
             /* DEMANDES DE SCENARIOS */
         case 2:
