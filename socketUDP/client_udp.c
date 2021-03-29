@@ -1,5 +1,5 @@
 /**
- * Ce programme permet d'envoyer un message au serveur via une socket UDP. 
+ * Ce programme permet d'envoyer un message au serveur via une socket UDP.
  * L'adresse IP et le port du serveur sont passés en argument du programme.
  * @author Cyril Rabat
  **/

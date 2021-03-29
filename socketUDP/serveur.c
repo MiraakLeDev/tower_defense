@@ -145,7 +145,6 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule) {
 
     /* On attend la connexion des quatres joueurs avant de commencer la partie */
     while (cmp > 0) {
-        printf("socket avant listen = %d\n", cellule->socketServeur);
 
         /* Mise en mode passif de la socket */
         if (listen(cellule->socketServeur, 1) == -1) {
@@ -153,20 +152,18 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule) {
             exit(EXIT_FAILURE);
         }
 
-        printf("socket après listen = %d\n", cellule->socketServeur);
-
-        /**** ERREUR ICI ****/
-
         /* Attente d'une connexion */
         printf("Serveur port = %d : attente de connexion de %d joueurs...\n",ntohs(cellule->adresseServeur.sin_port),cmp+1);
         if ((cellule->socketClient[cmp] = accept(cellule->socketServeur, NULL, NULL)) == -1) {
             perror("Erreur lors de la demande de connexion ");
             exit(EXIT_FAILURE);
         }
-
-        printf("socket après accept = %d\n", cellule->socketServeur);
-        printf("retour de accept = %d\n", cellule->socketClient[cmp]);
-
+        /*Envoi du jeu au client*/
+        if(send(cellule->socketClient[cmp], (void *)&jeu, sizeof(jeu_t), 0) == -1) {
+          perror("Erreur lors de l'envoi du message ");
+          exit(EXIT_FAILURE);
+        }
+        printf("Envoie de la map au joueur\n");
         cmp--;
     }
     supprimer_cellule_tcp(liste_serveurs, cellule);
