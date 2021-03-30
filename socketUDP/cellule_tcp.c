@@ -11,6 +11,7 @@ cellule_tcp* initialiser_cellule_tcp(char* adresse, int port, char* map, char* s
     cellule_tcp* cellule = malloc(sizeof(cellule_tcp));
     cellule->map = map;
     cellule->scenar = scenar;
+    cellule->place_libre = MAX_JOUEURS;
 
     /* Création de la socket */
     if((cellule->socketServeur = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
@@ -21,8 +22,11 @@ cellule_tcp* initialiser_cellule_tcp(char* adresse, int port, char* map, char* s
     /* Création de l'adresse du serveur */
     memset(&cellule->adresseServeur, 0, sizeof(struct sockaddr_in));
     cellule->adresseServeur.sin_family = AF_INET;
-    cellule->adresseServeur.sin_addr.s_addr = inet_addr("127.0.0.1");
+    cellule->adresseServeur.sin_addr.s_addr = inet_addr(adresse);
     cellule->adresseServeur.sin_port = htons(port);
+
+    strcpy(cellule->adresse,adresse);
+    cellule->port = port;
 
     /* Nommage de la socket */
     if(bind(cellule->socketServeur, (struct sockaddr*)&cellule->adresseServeur, sizeof(struct sockaddr_in)) == -1) {
@@ -33,12 +37,6 @@ cellule_tcp* initialiser_cellule_tcp(char* adresse, int port, char* map, char* s
     cellule->suivant = NULL;
     cellule->prec = NULL;
     return cellule;
-}
-void modif_cellule_tcp(cellule_tcp* cellule_tcp, int sockclient, struct sockaddr_in socktab, int id_client){
-/*
-    cellule_tcp->sockclient[id_client] = sockclient;
-    cellule_tcp->socktab[id_client] = socktab;
-*/
 }
 
 void detruire_cellule_tcp(cellule_tcp* cellule)

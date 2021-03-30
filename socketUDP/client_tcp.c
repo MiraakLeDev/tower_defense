@@ -17,7 +17,6 @@
 int main(int argc, char *argv[]) {
     int fd;
     jeu_t jeu;
-    int i=0,j=0;
     struct sockaddr_in adresse;
 
     /* Vérification des arguments */
@@ -35,8 +34,6 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    printf("addr : %s port : %s",  argv[0],  argv[1]);
-
     /* Remplissage de la structure */
     memset(&adresse, 0, sizeof(struct sockaddr_in));
     adresse.sin_family = AF_INET;
@@ -46,7 +43,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    sleep(5);
+    sleep(1);
 
     /* Connexion au serveur */
     if(connect(fd, (struct sockaddr*)&adresse, sizeof(adresse)) == -1) {
@@ -54,14 +51,14 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    printf("Je suis connecté au serveur TCP\n");
+    printf("Je suis connecté au serveur TCP : %s:%s\n", argv[0], argv[1]);
     /*Reception du jeu */
-    if (recv(fd, (jeu_t *)&jeu, sizeof(jeu_t), 0) == -1) {
+    if (recv(fd, (jeu_t*)&jeu, sizeof(jeu_t), 0) == -1) {
         perror("Erreur lors de la lecture de la taille du message ");
         exit(EXIT_FAILURE);
     }
 
-    printf("Récupération de la map\n");
+    printf("Récupération de la map...\n");
     printf("description :\n %s\n",jeu.description);
 
     sleep(5);

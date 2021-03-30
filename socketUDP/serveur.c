@@ -144,7 +144,7 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule) {
     close(fichier);
 
     /* On attend la connexion des quatres joueurs avant de commencer la partie */
-    while (cmp > 0) {
+    while (cmp >= 0) {
 
         /* Mise en mode passif de la socket */
         if (listen(cellule->socketServeur, 1) == -1) {
@@ -164,6 +164,8 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule) {
           exit(EXIT_FAILURE);
         }
         printf("Envoie de la map au joueur\n");
+
+        cellule->place_libre--;
         cmp--;
     }
     supprimer_cellule_tcp(liste_serveurs, cellule);
@@ -174,16 +176,18 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule) {
 int main(int argc, char *argv[]) {
     int sockfd, i=0;
     int taille_socket = 0;
+    int nb_serveurs=0;
 
     struct sockaddr_in adresseServeur, adresseClient;
     requete_udp requete;
     reponse_udp reponse;
-    reponse_2_udp reponse_serveur;
+    reponse_3_udp reponse_serveur;
+    reponse_4_udp reponse_liste_serveurs;
 
     DIR* d = NULL;
-    char maps[NB_MAPS][30];         /* les maps du jeux */
-    char scenars[NB_SCENAR][30];    /* les scénarios du jeux */
-    char adresse_tcp[16] = "127.0.0.1";
+    char maps[NB_MAPS][30];             /* les maps du jeux */
+    char scenars[NB_SCENAR][30];        /* les scénarios du jeux */
+    char adresse_tcp[16] = "127.0.0.1"; /* adresse des serveurs */
     unsigned int port_tcp;
 
     struct sigaction action_signal;
@@ -286,19 +290,18 @@ int main(int argc, char *argv[]) {
             /**** DEMANDE NOUVELLE PARTIE ****/
             else if(requete.action == 3){
                 port_tcp = rand() % 64511 + 1024;
+                cellule = initialiser_cellule_tcp(adresse_tcp, port_tcp, maps[requete.choix_map], scenars[requete.choix_scenar]);
+                ajouter_cellule_tcp(liste_serveurs, cellule);
+                printf("Le serveur TCP a démarré sur le port : %d\n", port_tcp);
+
+                /* On prépare la réponse pour le client -> données : adresse du serveur TCP + port */
+                reponse_serveur.port = port_tcp;
+                strcpy(reponse_serveur.adresse, adresse_tcp);
+                if(sendto(sockfd, &reponse_serveur, sizeof(reponse_3_udp), 0, (struct sockaddr*)&adresseClient, sizeof(struct sockaddr_in)) == -1) {
+                    perror("Erreur lors de l'envoi du message ");
+                    exit(EXIT_FAILURE);
+                }
                 if ((pid_serveur = fork()) == 0) {
-                    cellule = initialiser_cellule_tcp(adresse_tcp, port_tcp, maps[requete.choix_map], scenars[requete.choix_scenar]);
-                    ajouter_cellule_tcp(liste_serveurs, cellule);
-                    printf("Le serveur TCP a démarré sur le port : %d\n", port_tcp);
-
-                    /* On prépare la réponse pour le client -> données : adresse du serveur TCP + port */
-                    reponse_serveur.port = port_tcp;
-                    strcpy(reponse_serveur.adresse, adresse_tcp);
-                    if(sendto(sockfd, &reponse_serveur, sizeof(reponse_2_udp), 0, (struct sockaddr*)&adresseClient, sizeof(struct sockaddr_in)) == -1) {
-                        perror("Erreur lors de l'envoi du message ");
-                        exit(EXIT_FAILURE);
-                    }
-
                     /* On lance la partie */
                     fork_partie(liste_serveurs, cellule);
                     exit(EXIT_SUCCESS);
@@ -311,7 +314,41 @@ int main(int argc, char *argv[]) {
 
             /**** LISTE PARTIES ****/
             else if(requete.action == 4){
+                nb_serveurs = nb_cellules(liste_serveurs);
+                printf("nb serv = %d\n", nb_serveurs);
+                reponse_liste_serveurs.nb_serveurs = nb_serveurs;
+                if (nb_serveurs > 0){
+                    cellule = liste_serveurs->premier;
+                    i = 0;
+                    while (cellule != NULL){
+                        if (i < TAILLE_CSS_MAX){
+                            reponse_liste_serveurs.port[i] = cellule->port;
+                            strcpy(reponse_liste_serveurs.adresse[i],cellule->adresse);
+                            strcpy(reponse_liste_serveurs.map[i],cellule->map);
+                            strcpy(reponse_liste_serveurs.scenar[i],cellule->scenar);
+                            reponse_liste_serveurs.place_libre[i] = cellule->place_libre;
+                            cellule = cellule->suivant;
+                            printf("i = %d",i);
+                            i++;
+                        }else {
+                            reponse_liste_serveurs.nb_serveurs = i;
+                            reponse_liste_serveurs.end = 0;
+                            if(sendto(sockfd, &reponse_liste_serveurs, sizeof(reponse_4_udp), 0, (struct sockaddr*)&adresseClient, sizeof(struct sockaddr_in)) == -1) {
+                                perror("Erreur lors de l'envoi du message ");
+                                exit(EXIT_FAILURE);
+                            }
+                            sleep(1);
+                            i = 0;
+                        }
+                    }
+                    reponse_liste_serveurs.nb_serveurs = i;
+                    reponse_liste_serveurs.end = 1;
+                    if(sendto(sockfd, &reponse_liste_serveurs, sizeof(reponse_4_udp), 0, (struct sockaddr*)&adresseClient, sizeof(struct sockaddr_in)) == -1) {
+                        perror("Erreur lors de l'envoi du message ");
+                        exit(EXIT_FAILURE);
+                    }
 
+                }
             }
             printf("\n\n");
         }

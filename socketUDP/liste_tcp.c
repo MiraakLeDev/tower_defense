@@ -39,6 +39,23 @@ void supprimer_cellule_tcp(liste_tcp* liste, cellule_tcp* aSupprimer){
     detruire_cellule_tcp(aSupprimer);
 }
 
+int nb_cellules(liste_tcp* liste){
+    cellule_tcp* cellule;
+    int nb=0;
+    if (liste->premier == NULL)
+    {
+        return nb;
+    }
+
+    cellule = liste->premier;
+    nb++;
+    while (cellule->suivant != NULL){
+        cellule = cellule->suivant;
+        nb++;
+    }
+    return nb;
+}
+
 void afficher_liste_tcp(liste_tcp* liste){
     cellule_tcp *actuel = NULL;
     int cmp=0;
