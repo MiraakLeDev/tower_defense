@@ -116,7 +116,52 @@ void set_scenar(jeu_t* jeu,int fichier){
     }
     */
 }
+void read_scenar(jeu_t* jeu,int fichier,cellule_tcp* cellule){
+  unsigned int donnees=0;
+  unsigned char type;
+  long temps=0;
+  char msg[255];
+  int i=0;
+  while (read(fichier,&temps,sizeof(long)) > 0) {
+    if(read(fichier,&type,sizeof(unsigned char)) < 0){
+        perror("ERREUR : Lecture du scénario \n");
+        exit(EXIT_FAILURE);
+    }
+    for (i = 0; i < MAX_JOUEURS; i++) {
+      if(send(cellule->socketClient[i],&type, sizeof(unsigned char), 0) == -1) {
+        perror("Erreur lors de l'envoi du message ");
+        exit(EXIT_FAILURE);
+      }
+    }
+    if ((int)type == 0) {
+      if(read(fichier,&msg,sizeof(char)*255) < 0){
+          perror("ERREUR : Lecture du scénario \n");
+          exit(EXIT_FAILURE);
+      }
+    for (i = 0; i < MAX_JOUEURS; i++) {
+          if(send(cellule->socketClient[i],&msg, sizeof(char)*255, 0) == -1) {
+            perror("Erreur lors de l'envoi du message ");
+            exit(EXIT_FAILURE);
+          }
+    }
 
+      sleep(temps/1000);
+    }else{
+      if(read(fichier,&donnees,sizeof(unsigned int)) < 0){
+          perror("ERREUR : Lecture du scénario \n");
+          exit(EXIT_FAILURE);
+      }
+      for (i = 0; i < MAX_JOUEURS; i++) {
+        if(send(cellule->socketClient[i],&donnees, sizeof(unsigned int), 0) == -1) {
+          perror("Erreur lors de l'envoi du message ");
+          exit(EXIT_FAILURE);
+        }
+      }
+      sleep(temps/1000);
+    }
+
+  }
+}
 int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule) {
     int cmp = MAX_JOUEURS - 1, fichier;
     char map_nom[MAX_CHAR + 7] = "cartes/";
@@ -131,7 +176,6 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule) {
         exit(EXIT_FAILURE);
     }
     set_map(&jeu, fichier);
-    close(fichier);
 
     /* CHARGEMENT DU SCENARIO */
     strcat(scenar_nom, cellule->scenar);
@@ -141,7 +185,6 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule) {
         exit(EXIT_FAILURE);
     }
     set_scenar(&jeu, fichier);
-    close(fichier);
 
     /* On attend la connexion des quatres joueurs avant de commencer la partie */
     while (cmp >= 0) {
@@ -164,10 +207,11 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule) {
           exit(EXIT_FAILURE);
         }
         printf("Envoie de la map au joueur\n");
-
         cellule->place_libre--;
         cmp--;
     }
+    read_scenar(&jeu, fichier,cellule);
+    close(fichier);
     supprimer_cellule_tcp(liste_serveurs, cellule);
     return 0;
 }

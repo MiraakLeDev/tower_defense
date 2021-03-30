@@ -3,7 +3,7 @@
 #
 
 EXEC = serveur client_udp client_tcp
-OBJETS = cellule_tcp.o liste_tcp.o
+OBJETS = cellule_tcp.o liste_tcp.o ncurses.o fenetre.o interface.o
 NOM_PROJET = socketUDP
 
 #
@@ -24,8 +24,8 @@ OBJETS_O = $(OBJETS) $(EXEC_O)
 #
 
 CC = gcc
-CCFLAGS = -Wall -O3 -ansi -pedantic -Werror -D _XOPEN_SOURCE -pthread
-CCLIBS =
+CCFLAGS = -Wall -O3 -ansi -pedantic -Werror -D _XOPEN_SOURCE 
+CCLIBS = -lncurses -lpthread
 
 #
 # REGLES
@@ -82,6 +82,9 @@ archive: clean
 # DEPENDANCES
 serveur.o: serveur.c jeu.h
 client_udp.o: client_udp.c
-client_tcp.o: client_tcp.c
+client_tcp.o: client_tcp.c ncurses.h fenetre.h jeu.h interface.h
 cellule_tcp.o : cellule_tcp.c cellule_tcp.h
 liste_tcp.o : liste_tcp.c liste_tcp.h
+ncurses.o: ncurses.c ncurses.h
+fenetre.o: fenetre.c fenetre.h
+interface.o: interface.c fenetre.h ncurses.h jeu.h interface.h
