@@ -26,35 +26,34 @@ typedef struct arguments{
 }arguments_t;
 
 void* scenario(void* args){
-  unsigned int donnees=0;
-  unsigned char type=0;
-  char msg[255];
-  arguments_t *arguments = (arguments_t*)args;
+    unsigned int donnees=0;
+    unsigned char type=0;
+    char msg[255];
+    arguments_t *arguments = (arguments_t*)args;
 
-  while (type != 100) {
-
-    if (recv(arguments->socket, &type, sizeof(unsigned char), 0) == -1) {
-        perror("Erreur lors de la lecture de la taille du message ");
-        exit(EXIT_FAILURE);
+    while ((int)type < 4) {
+        if (recv(arguments->socket, &type, sizeof(unsigned char), 0) == -1) {
+            perror("Erreur lors de la lecture de la taille du message ");
+            exit(EXIT_FAILURE);
+        }
+        if ((int)type == 0) {
+            if (recv(arguments->socket, &msg, sizeof(char)*255, 0) == -1) {
+                perror("Erreur lors de la lecture de la taille du message ");
+                exit(EXIT_FAILURE);
+            }
+            printf(" args %d ",type);
+            printf("message %s\n",msg );
+        }
+        else{
+        if (recv(arguments->socket, &donnees, sizeof(unsigned int), 0) == -1) {
+            perror("Erreur lors de la lecture de la taille du message ");
+            exit(EXIT_FAILURE);
+        }
+        printf(" args %d %d\n",type,donnees);
+        }
     }
-    if ((int)type == 0) {
-      if (recv(arguments->socket, &msg, sizeof(char)*255, 0) == -1) {
-          perror("Erreur lors de la lecture de la taille du message ");
-          exit(EXIT_FAILURE);
-      }
-      printf(" args %d ",type);
-      printf("message %s\n",msg );
-    }else{
-      if (recv(arguments->socket, &donnees, sizeof(unsigned int), 0) == -1) {
-          perror("Erreur lors de la lecture de la taille du message ");
-          exit(EXIT_FAILURE);
-      }
-      printf(" args %d %d\n",type,donnees);
-    }
-  }
-
- printf("arguments : %d\n",arguments->socket);
- pthread_exit(NULL);
+    printf("arguments : %d\n",arguments->socket);
+    pthread_exit(NULL);
     return NULL;
 }
 
@@ -112,6 +111,7 @@ int main(int argc, char *argv[]) {
 
     printf("Récupération de la map\n");
     printf("description :\n %s\n",jeu.description);
+
     /* Initialisation de ncurses */
     ncurses_initialiser();
     ncurses_souris();

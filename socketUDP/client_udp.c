@@ -15,12 +15,14 @@
 
 int main(int argc, char *argv[]) {
     int sockfd, i=0, action = -1, choix_map = -1, choix_scenar = -1;
+    char choix_serveur = 0;
     struct sockaddr_in adresseServeur;
     requete_udp requete;
     reponse_udp reponse;
     reponse_3_udp reponse_serveur;
     reponse_4_udp reponse_liste_serveurs;
     char port_tcp[6];
+    char adresse_tcp[16];
 
     /* Vérification des arguments */
     if(argc != 4) {
@@ -79,32 +81,58 @@ int main(int argc, char *argv[]) {
                 perror("Erreur lors de l'envoi du message ");
                 exit(EXIT_FAILURE);
             }
-            /* réponse du serveur UDP */
-            while ((reponse_liste_serveurs.end == 0) && (recv(sockfd, &reponse_liste_serveurs, sizeof(reponse_4_udp), 0) > 0)) {
-                if (reponse_liste_serveurs.nb_serveurs <= TAILLE_CSS_MAX) {
-                    printf("nb serveurs = %d \n", reponse_liste_serveurs.nb_serveurs);
-                    for (i = 0; i < reponse_liste_serveurs.nb_serveurs; i++) {
-                        printf("Serveur %s port %d : \n map = %s \n scenario = %s \n places disponibles = %d \n\n",
-                               reponse_liste_serveurs.adresse[i],
-                               reponse_liste_serveurs.port[i], reponse_liste_serveurs.map[i],
-                               reponse_liste_serveurs.scenar[i],
-                               reponse_liste_serveurs.place_libre[i]);
+            else{
+                while ((reponse_liste_serveurs.end == 0) && (recv(sockfd, &reponse_liste_serveurs, sizeof(reponse_4_udp), 0) > 0)) {
+                    if (reponse_liste_serveurs.nb_serveurs == 0){
+                        printf("Aucun serveur n'a été créé pour le moment.\n");
+                        exit(EXIT_SUCCESS);
+                    }
+                    if (reponse_liste_serveurs.nb_serveurs <= TAILLE_CSS_MAX) {
+                        printf("nb serveurs = %d \n", reponse_liste_serveurs.nb_serveurs);
+                        for (i = 0; i < reponse_liste_serveurs.nb_serveurs; i++) {
+                            printf("Serveur %s port %d : \n map = %s \n scenario = %s \n places disponibles = %d \n\n",
+                                   reponse_liste_serveurs.adresse[i],
+                                   reponse_liste_serveurs.port[i], reponse_liste_serveurs.map[i],
+                                   reponse_liste_serveurs.scenar[i],
+                                   reponse_liste_serveurs.place_libre[i]);
+                        }
+                    }
+                    else {
+                        for (i = 0; i < TAILLE_CSS_MAX; i++) {
+                            printf("Serveur %s port %d : \n map = %s \n scenario = %s \n places disponibles = %d \n\n",
+                                   reponse_liste_serveurs.adresse[i],
+                                   reponse_liste_serveurs.port[i], reponse_liste_serveurs.map[i],
+                                   reponse_liste_serveurs.scenar[i],
+                                   reponse_liste_serveurs.place_libre[i]);
+                        }
                     }
                 }
-                else {
-                    for (i = 0; i < TAILLE_CSS_MAX; i++) {
-                        printf("Serveur %s port %d : \n map = %s \n scenario = %s \n places disponibles = %d \n\n",
-                               reponse_liste_serveurs.adresse[i],
-                               reponse_liste_serveurs.port[i], reponse_liste_serveurs.map[i],
-                               reponse_liste_serveurs.scenar[i],
-                               reponse_liste_serveurs.place_libre[i]);
+
+                printf("Voulez-vous vous connecter à une de ces parties ?(O = Oui | N = Non)\n");
+                do {
+                    if (scanf("%c",&choix_serveur) == -1){
+                        perror("ERREUR : choix du serveur");
+                        exit(EXIT_FAILURE);
                     }
+                } while (choix_serveur != 'O' && choix_serveur != 'N');
+
+                printf("Entrez une l'adresse du serveur (Ex: 127.0.0.1) : \n");
+                if (scanf("%16s",adresse_tcp) == -1){
+                    perror("ERREUR : IP du serveur");
+                    exit(EXIT_FAILURE);
                 }
+
+                printf("Entrez une le port du serveur (Ex: 2001) : \n");
+                if (scanf("%6s",port_tcp) == -1){
+                    perror("ERREUR : Port du serveur");
+                    exit(EXIT_FAILURE);
+                }
+                printf("execl = %d", execl("./client_tcp", adresse_tcp, port_tcp, NULL));
             }
             break;
 
 
-            /* CREATION D'UNE PARTIE */
+        /* CREATION D'UNE PARTIE */
         case 3:
             requete.action = 1;
             /* Demande des cartes */

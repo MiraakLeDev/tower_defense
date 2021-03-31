@@ -15,6 +15,7 @@
 #include <dirent.h>      /* Pour parcourir les dossiers */
 #include <sys/wait.h>
 #include <time.h>
+#include <pthread.h>
 
 #include "include.h"
 #include "liste_tcp.h"
@@ -25,6 +26,7 @@
 
 
 int stop = 0;
+liste_tcp* liste_serveurs;
 void handler(int signum)
 {
     if(signum == SIGINT){
@@ -117,55 +119,62 @@ void set_scenar(jeu_t* jeu,int fichier){
     */
 }
 void read_scenar(jeu_t* jeu,int fichier,cellule_tcp* cellule){
-  unsigned int donnees=0;
-  unsigned char type;
-  long temps=0;
-  char msg[255];
-  int i=0;
-  while (read(fichier,&temps,sizeof(long)) > 0) {
-    if(read(fichier,&type,sizeof(unsigned char)) < 0){
-        perror("ERREUR : Lecture du scénario \n");
-        exit(EXIT_FAILURE);
+    unsigned int donnees=0;
+    unsigned char type;
+    long temps=0;
+    char msg[255];
+    int i=0;
+    while (read(fichier,&temps,sizeof(long)) > 0) {
+        if(read(fichier,&type,sizeof(unsigned char)) < 0){
+            perror("ERREUR : Lecture du scénario \n");
+            exit(EXIT_FAILURE);
+        }
+        for (i = 0; i < MAX_JOUEURS; i++) {
+            if(send(cellule->socketClient[i],&type, sizeof(unsigned char), 0) == -1) {
+                perror("Erreur lors de l'envoi du message ");
+                exit(EXIT_FAILURE);
+            }
+        }
+        if ((int)type == 0) {
+            if(read(fichier,&msg,sizeof(char)*255) < 0){
+                perror("ERREUR : Lecture du scénario \n");
+                exit(EXIT_FAILURE);
+            }
+            for (i = 0; i < MAX_JOUEURS; i++) {
+                if(send(cellule->socketClient[i],&msg, sizeof(char)*255, 0) == -1) {
+                    perror("Erreur lors de l'envoi du message ");
+                    exit(EXIT_FAILURE);
+                }
+            }
+            sleep(temps/1000);
+        }
+        else{
+            if(read(fichier,&donnees,sizeof(unsigned int)) < 0){
+                perror("ERREUR : Lecture du scénario \n");
+                exit(EXIT_FAILURE);
+            }
+            for (i = 0; i < MAX_JOUEURS; i++) {
+                if(send(cellule->socketClient[i],&donnees, sizeof(unsigned int), 0) == -1) {
+                    perror("Erreur lors de l'envoi du message ");
+                    exit(EXIT_FAILURE);
+                }
+            }
+            sleep(temps/1000);
+        }
     }
+    type = 4;
     for (i = 0; i < MAX_JOUEURS; i++) {
-      if(send(cellule->socketClient[i],&type, sizeof(unsigned char), 0) == -1) {
-        perror("Erreur lors de l'envoi du message ");
-        exit(EXIT_FAILURE);
-      }
-    }
-    if ((int)type == 0) {
-      if(read(fichier,&msg,sizeof(char)*255) < 0){
-          perror("ERREUR : Lecture du scénario \n");
-          exit(EXIT_FAILURE);
-      }
-    for (i = 0; i < MAX_JOUEURS; i++) {
-          if(send(cellule->socketClient[i],&msg, sizeof(char)*255, 0) == -1) {
+        if (send(cellule->socketClient[i], &type, sizeof(unsigned char), 0) == -1) {
             perror("Erreur lors de l'envoi du message ");
             exit(EXIT_FAILURE);
-          }
-    }
-
-      sleep(temps/1000);
-    }else{
-      if(read(fichier,&donnees,sizeof(unsigned int)) < 0){
-          perror("ERREUR : Lecture du scénario \n");
-          exit(EXIT_FAILURE);
-      }
-      for (i = 0; i < MAX_JOUEURS; i++) {
-        if(send(cellule->socketClient[i],&donnees, sizeof(unsigned int), 0) == -1) {
-          perror("Erreur lors de l'envoi du message ");
-          exit(EXIT_FAILURE);
         }
-      }
-      sleep(temps/1000);
     }
-
-  }
 }
-int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule) {
+void* thread_partie(void* arg_cellule) {
     int cmp = MAX_JOUEURS - 1, fichier;
     char map_nom[MAX_CHAR + 7] = "cartes/";
     char scenar_nom[MAX_CHAR + 10] = "scenarios/";
+    cellule_tcp* cellule = (cellule_tcp*) arg_cellule;
     jeu_t jeu;
 
     /* CHARGEMENT DE LA CARTE */
@@ -207,13 +216,16 @@ int fork_partie(liste_tcp* liste_serveurs, cellule_tcp* cellule) {
           exit(EXIT_FAILURE);
         }
         printf("Envoie de la map au joueur\n");
+        printf("places disponibles = %d\n", cellule->place_libre);
         cellule->place_libre--;
         cmp--;
     }
     read_scenar(&jeu, fichier,cellule);
     close(fichier);
     supprimer_cellule_tcp(liste_serveurs, cellule);
-    return 0;
+    printf("Le serveur fils s'éteint\n");
+
+    pthread_exit(NULL);
 }
 
 
@@ -237,8 +249,7 @@ int main(int argc, char *argv[]) {
     struct sigaction action_signal;
 
     /**** SERVEURS TCP ****/
-    pid_t pid_serveur;
-    liste_tcp* liste_serveurs;
+    pthread_t thread_serveur;
     cellule_tcp* cellule;
 
     /* Récupération des arguments */
@@ -333,8 +344,11 @@ int main(int argc, char *argv[]) {
 
             /**** DEMANDE NOUVELLE PARTIE ****/
             else if(requete.action == 3){
+                /* on choisit un port TCP pour notre serveur */
                 port_tcp = rand() % 64511 + 1024;
+                /* on initialise le serveur TCP */
                 cellule = initialiser_cellule_tcp(adresse_tcp, port_tcp, maps[requete.choix_map], scenars[requete.choix_scenar]);
+                /* on l'ajoute à notre ensemble de serveurs déja en ligne */
                 ajouter_cellule_tcp(liste_serveurs, cellule);
                 printf("Le serveur TCP a démarré sur le port : %d\n", port_tcp);
 
@@ -345,26 +359,27 @@ int main(int argc, char *argv[]) {
                     perror("Erreur lors de l'envoi du message ");
                     exit(EXIT_FAILURE);
                 }
-                if ((pid_serveur = fork()) == 0) {
-                    /* On lance la partie */
-                    fork_partie(liste_serveurs, cellule);
-                    exit(EXIT_SUCCESS);
-                }
-                else if(pid_serveur == -1){
-                    perror("ERREUR : Création fils TCP impossible\n");
+                /* On dédie un thread pour notre serveur TCP */
+                if (pthread_create(&thread_serveur, NULL, thread_partie,(void*)cellule) != 0)
+                {
+                    printf("Problème création du thread serveur tcp");
                     exit(EXIT_FAILURE);
                 }
             }
 
             /**** LISTE PARTIES ****/
             else if(requete.action == 4){
+                /* on récupère le nombre de serveurs TCP en ligne */
                 nb_serveurs = nb_cellules(liste_serveurs);
-                printf("nb serv = %d\n", nb_serveurs);
                 reponse_liste_serveurs.nb_serveurs = nb_serveurs;
+
+                /* Si il existe au moins un serveur en ligne alors : */
                 if (nb_serveurs > 0){
                     cellule = liste_serveurs->premier;
                     i = 0;
+                    /* On parcourt les serveurs en ligne */
                     while (cellule != NULL){
+                        /* tant qu'on ne dépasse pas la taille max d'envoi de paquet on continue  */
                         if (i < TAILLE_CSS_MAX){
                             reponse_liste_serveurs.port[i] = cellule->port;
                             strcpy(reponse_liste_serveurs.adresse[i],cellule->adresse);
@@ -372,9 +387,10 @@ int main(int argc, char *argv[]) {
                             strcpy(reponse_liste_serveurs.scenar[i],cellule->scenar);
                             reponse_liste_serveurs.place_libre[i] = cellule->place_libre;
                             cellule = cellule->suivant;
-                            printf("i = %d",i);
                             i++;
-                        }else {
+                        }
+                        /* Si on dépasse la taille max alors on envoie */
+                        else {
                             reponse_liste_serveurs.nb_serveurs = i;
                             reponse_liste_serveurs.end = 0;
                             if(sendto(sockfd, &reponse_liste_serveurs, sizeof(reponse_4_udp), 0, (struct sockaddr*)&adresseClient, sizeof(struct sockaddr_in)) == -1) {
@@ -386,12 +402,12 @@ int main(int argc, char *argv[]) {
                         }
                     }
                     reponse_liste_serveurs.nb_serveurs = i;
+                    /* si end == 1 cela veut dire que c'est le dernier paquet tcp envoyé, la liste de serveur a été envoyé en totalité */
                     reponse_liste_serveurs.end = 1;
-                    if(sendto(sockfd, &reponse_liste_serveurs, sizeof(reponse_4_udp), 0, (struct sockaddr*)&adresseClient, sizeof(struct sockaddr_in)) == -1) {
-                        perror("Erreur lors de l'envoi du message ");
-                        exit(EXIT_FAILURE);
-                    }
-
+                }
+                if(sendto(sockfd, &reponse_liste_serveurs, sizeof(reponse_4_udp), 0, (struct sockaddr*)&adresseClient, sizeof(struct sockaddr_in)) == -1) {
+                    perror("Erreur lors de l'envoi du message ");
+                    exit(EXIT_FAILURE);
                 }
             }
             printf("\n\n");
