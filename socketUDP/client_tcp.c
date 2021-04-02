@@ -18,49 +18,69 @@
 #include "ncurses.h"
 #include "fenetre.h"
 #include "interface.h"
+jeu_t jeu;
 typedef struct arguments{
-  int socket;
-  jeu_t* jeu;
+  int num; /*Utilisé pour le thread scenario pour la socket + thread unite pour le type de l'unite*/
   interface_t *interface;
+  int id_joueur;
 
 }arguments_t;
 
+void* spawn(void* args){
+    unite_t unite;
+    arguments_t *unite_arg = (arguments_t*)args;
+
+    initialiser_unite(&unite,unite_arg->num);
+    unite.position[0]= jeu.spawn[unite_arg->id_joueur][0];
+    unite.position[1]= jeu.spawn[unite_arg->id_joueur][1];
+    wprintw(unite_arg->interface->infos->interieur,"\nSpawn de %s avec %d hp spawn[%d][%d]",unite.nom,unite.vie,unite.position[0],unite.position[1]);
+    wrefresh(unite_arg->interface->infos->interieur);
+
+    pthread_exit(NULL);
+
+}
 void* scenario(void* args){
     unsigned int donnees=0;
     unsigned char type=0;
     char msg[255];
     arguments_t *arguments = (arguments_t*)args;
-
-    while ((int)type < 4) {
-        if (recv(arguments->socket, &type, sizeof(unsigned char), 0) == -1) {
+    arguments_t unite;
+    pthread_t thread[100];
+    int cmp=0;
+    while ((int)type != 4) {
+        if (recv(arguments->num, &type, sizeof(unsigned char), 0) == -1) {
             perror("Erreur lors de la lecture de la taille du message ");
             exit(EXIT_FAILURE);
         }
         if ((int)type == 0) {
-            if (recv(arguments->socket, &msg, sizeof(char)*255, 0) == -1) {
+            if (recv(arguments->num, &msg, sizeof(char)*255, 0) == -1) {
                 perror("Erreur lors de la lecture de la taille du message ");
                 exit(EXIT_FAILURE);
             }
-            printf(" args %d ",type);
-            printf("message %s\n",msg );
+            wprintw(arguments->interface->infos->interieur,"\nMessage : %s",msg);
         }
         else{
-        if (recv(arguments->socket, &donnees, sizeof(unsigned int), 0) == -1) {
-            perror("Erreur lors de la lecture de la taille du message ");
-            exit(EXIT_FAILURE);
+            if (recv(arguments->num, &donnees, sizeof(unsigned int), 0) == -1) {
+                perror("Erreur lors de la lecture de la taille du message ");
+                exit(EXIT_FAILURE);
         }
-        printf(" args %d %d\n",type,donnees);
+
+            /*Spawn unites*/
+            unite.num = donnees;
+            unite.interface = arguments->interface;
+            unite.id_joueur = arguments->id_joueur;
+            pthread_create(&thread[cmp],NULL,&spawn,(void*)&unite);
+
         }
+
+        cmp++;
     }
-    printf("arguments : %d\n",arguments->socket);
     pthread_exit(NULL);
-    return NULL;
 }
 
 
 int main(int argc, char *argv[]) {
     int fd;
-    jeu_t jeu;
     struct sockaddr_in adresse;
     int ch;
     interface_t interface;
@@ -119,8 +139,9 @@ int main(int argc, char *argv[]) {
     palette();
     clear();
     refresh();
-    arguments.jeu = &jeu;
-    arguments.socket = fd;
+    /* Création de l'interface */
+    interface = interface_creer(&jeu);
+
     /* Vérification des dimensions du terminal */
     if((COLS < LARGEUR) || (LINES < HAUTEUR)) {
         ncurses_stopper();
@@ -129,12 +150,11 @@ int main(int argc, char *argv[]) {
                 COLS, LINES, LARGEUR, HAUTEUR);
         exit(EXIT_FAILURE);
     }
-
-    /* Création de l'interface */
-    /*interface = interface_creer(&jeu);*/
+    arguments.num = fd;
+    arguments.interface = &interface;
+    arguments.id_joueur = 0;
     pthread_create(&thread,NULL,&scenario,(void*)&arguments);
-    pthread_join(thread,NULL);
-    /* Boucle principale */
+
     while(quitter == FALSE) {
       ch = getch();
 
@@ -142,7 +162,6 @@ int main(int argc, char *argv[]) {
         quitter = true;
       else{
         interface_main(&interface, &jeu, ch);
-        wprintw(interface.infos->interieur, "\ntest");
         wrefresh(interface.infos->interieur);
       }
     }

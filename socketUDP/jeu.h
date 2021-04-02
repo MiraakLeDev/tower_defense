@@ -15,7 +15,29 @@ typedef struct {
     unsigned int freeze;           /* Etat freeze */
     unsigned int unfreeze;         /* Etat unfreeze */
     char description[255];         /* description du scenario */
-} jeu_t;
+    unsigned char spawn[4][2];     /*Position spawns 0 : ordinateur, 1 : Joueur1, 2 : Joueur2, 3 : Joueur3 */
+
+}jeu_t;
+
+typedef struct {
+    char nom[30];
+    unsigned char position[2];   /*Position de l'unite'*/
+    unsigned int cout;             /* Cout de l'unite */
+    unsigned int vie;              /* Vie de l'unite */
+    unsigned int vitesse;          /* Vitesse de l'unite */
+}unite_t;
+
+typedef struct {
+    unsigned char position[1][1];  /*Position de la tour*/
+    unsigned int cout;            /* Cout de la tour */
+    unsigned int degat_min;       /*Degat minimum de la tour*/
+    unsigned int degat_max;       /*Degat maximum de la tour*/
+    unsigned int portee;          /*Portee de la tour */
+    unsigned int vitesse;         /*Vitesse d'attaque' */
+}tour_t;
+
+void initialiser_tour(tour_t* tour,int type);
+void initialiser_unite(unite_t* unite,int type);
 
 /* Constantes pour les coûts des unités */
 #define SOLDAT_COUT       100
