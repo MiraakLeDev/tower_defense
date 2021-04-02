@@ -33,9 +33,9 @@ void* spawn(void* args){
     initialiser_unite(&unite,unite_arg->num);
     unite.position[0]= jeu.spawn[unite_arg->id_joueur][0];
     unite.position[1]= jeu.spawn[unite_arg->id_joueur][1];
-    wprintw(unite_arg->interface->infos->interieur,"\nSpawn de %s avec %d hp spawn[%d][%d]",unite.nom,unite.vie,unite.position[0],unite.position[1]);
+    deplacement_unite(&unite,&jeu);
+    wprintw(unite_arg->interface->infos->interieur,"\nUnite detruite");
     wrefresh(unite_arg->interface->infos->interieur);
-
     pthread_exit(NULL);
 
 }

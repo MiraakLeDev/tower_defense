@@ -1,6 +1,5 @@
 #ifndef _JEU_
 #define _JEU_
-
 /**
  * Ce fichier permet de tester l'interface en lui fournissant les données nécessaires.
  * Pour le projet, vous pouvez/devez le faire différemment...
@@ -28,7 +27,7 @@ typedef struct {
 }unite_t;
 
 typedef struct {
-    unsigned char position[1][1];  /*Position de la tour*/
+    unsigned char position[2];  /*Position de la tour*/
     unsigned int cout;            /* Cout de la tour */
     unsigned int degat_min;       /*Degat minimum de la tour*/
     unsigned int degat_max;       /*Degat maximum de la tour*/
@@ -38,6 +37,14 @@ typedef struct {
 
 void initialiser_tour(tour_t* tour,int type);
 void initialiser_unite(unite_t* unite,int type);
+void deplacement_unite(unite_t* unite,jeu_t* jeu);
+int deplacement_haut(unsigned char carte[15][15],int x, int y);
+int deplacement_bas(unsigned char carte[15][15],int x, int y);
+int deplacement_gauche(unsigned char carte[15][15],int x, int y);
+int deplacement_droite(unsigned char carte[15][15],int x, int y);
+int trouver_chemin(unsigned char carte[15][15],unite_t* unite);
+
+
 
 /* Constantes pour les coûts des unités */
 #define SOLDAT_COUT       100
