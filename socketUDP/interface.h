@@ -1,6 +1,5 @@
 #ifndef _INTERFACE_
 #define _INTERFACE_
-
 /* Propriétés de la fenêtre d'informations */
 #define INFOS_POSX        0 /* Position en X */
 #define INFOS_POSY        0 /* Position en Y */
@@ -75,6 +74,7 @@ typedef struct {
  */
 void palette();
 
+/*void deplacement_unite(unite_t* unite,jeu_t* jeu, interface_t* interface);*/
 /**
  * Création d'une interface.
  * @param jeu l'état du jeu
@@ -114,7 +114,7 @@ void interface_MAJEtat(interface_t *interface, jeu_t *jeu);
  * @param interface l'interface
  * @param jeu l'état du jeu
  * @param posX la position X du clic dans la fenêtre
- * @param posY la position Y du clic dans la fenêtre 
+ * @param posY la position Y du clic dans la fenêtre
  */
 void interface_outils(interface_t *interface, jeu_t *jeu, int posX, int posY);
 
@@ -123,7 +123,7 @@ void interface_outils(interface_t *interface, jeu_t *jeu, int posX, int posY);
  * @param interface l'interface
  * @param jeu l'état du jeu
  * @param posX la position X du clic dans la fenêtre
- * @param posY la position Y du clic dans la fenêtre 
+ * @param posY la position Y du clic dans la fenêtre
  */
 void interface_attaques(interface_t *interface, jeu_t *jeu, int posX, int posY);
 

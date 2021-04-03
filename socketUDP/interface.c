@@ -1,8 +1,11 @@
 #include "fenetre.h"
 #include "ncurses.h"
 #include "jeu.h"
-
+#include <unistd.h>
+#include<stdio.h>
+#include <string.h>
 #include "interface.h"
+
 
 /**
  * Définition de la palette.
@@ -17,15 +20,18 @@ void palette() {
     init_pair(7, COLOR_WHITE, COLOR_BLUE);
 }
 
-/**
- * Création d'une interface.
- * @param jeu l'état du jeu
- * @return l'interface créée
- */
+
+
+
+ /**
+  * Création d'une interface.
+  * @param jeu l'état du jeu
+  * @return l'interface créée
+  */
 interface_t interface_creer(jeu_t *jeu) {
     interface_t retour;
     int i, j;
-  
+
     retour.outilsel = OUTIL_NONE;
 
     retour.infos = fenetre_creer(INFOS_POSX, INFOS_POSY, INFOS_LARGEUR, INFOS_HAUTEUR, "Informations", TRUE);
@@ -47,12 +53,12 @@ interface_t interface_creer(jeu_t *jeu) {
     wprintw(retour.etat->interieur, "Unfreeze   0\n");
     wprintw(retour.etat->interieur, "Adv. 1    10\n");
     wprintw(retour.etat->interieur, "Adv. 2    10\n");
-    wprintw(retour.etat->interieur, "Adv. 3    10\n");    
+    wprintw(retour.etat->interieur, "Adv. 3    10\n");
     wrefresh(retour.etat->interieur);
 
     retour.attaques = fenetre_creer(ATTAQUES_POSX, ATTAQUES_POSY, ATTAQUES_LARGEUR, ATTAQUES_HAUTEUR, "Attaques", FALSE);
     interface_MAJAttaques(&retour, jeu);
-        
+
     retour.carte = fenetre_creer(CARTE_POSX, CARTE_POSY, CARTE_LARGEUR, CARTE_HAUTEUR, "Carte", FALSE);
     for(i = 0; i < 15; i++) {
         for(j = 0; j < 15; j++) {
@@ -103,16 +109,16 @@ void interface_MAJAttaques(interface_t *interface, jeu_t *jeu) {
     wattron(interface->attaques->interieur, COLOR_PAIR(1));
     if(jeu->argent < SOLDAT_COUT)
         wattron(interface->attaques->interieur, COLOR_PAIR(4));
-    wprintw(interface->attaques->interieur, "Soldat          %4d$ -> 123\n", SOLDAT_COUT);    
-    
+    wprintw(interface->attaques->interieur, "Soldat          %4d$ -> 123\n", SOLDAT_COUT);
+
     if(jeu->argent < COMMANDO_COUT)
         wattron(interface->attaques->interieur, COLOR_PAIR(4));
     wprintw(interface->attaques->interieur, "Commando        %4d$ -> 123\n", COMMANDO_COUT);
-    
+
     if(jeu->argent < VEHICULE_COUT)
         wattron(interface->attaques->interieur, COLOR_PAIR(4));
     wprintw(interface->attaques->interieur, "Vehicule blinde %4d$ -> 123\n", VEHICULE_COUT);
-    
+
     if(jeu->argent < MISSILE_COUT)
         wattron(interface->attaques->interieur, COLOR_PAIR(4));
     wprintw(interface->attaques->interieur, "Lance-missiles  %4d$ -> 123\n", MISSILE_COUT);
@@ -195,7 +201,7 @@ void interface_MAJOutils(interface_t *interface, jeu_t *jeu) {
 
     if(jeu->unfreeze < 10)
         wattron(interface->outils->interieur, COLOR_PAIR(4));
-    else 
+    else
         wattron(interface->outils->interieur, COLOR_PAIR(1));
     wprintw(interface->outils->interieur, "Unfreeze\n");
 
@@ -223,7 +229,7 @@ void interface_MAJEtat(interface_t *interface, jeu_t *jeu) {
  * @param interface l'interface
  * @param jeu l'état du jeu
  * @param posX la position X du clic dans la fenêtre
- * @param posY la position Y du clic dans la fenêtre 
+ * @param posY la position Y du clic dans la fenêtre
  */
 void interface_outils(interface_t *interface, jeu_t *jeu, int posX, int posY) {
     switch(posY) {
@@ -232,6 +238,7 @@ void interface_outils(interface_t *interface, jeu_t *jeu, int posX, int posY) {
                 interface->outilsel = OUTIL_TOUR_1;
                 interface_MAJOutils(interface, jeu);
                 wprintw(interface->infos->interieur, "\nOutil tour 1 selectionne. Cliquez sur un carre d'herbe.");
+
             }
             else
                 wprintw(interface->infos->interieur, "\nPas assez d'argent pour acheter une tour 1.");
@@ -270,7 +277,7 @@ void interface_outils(interface_t *interface, jeu_t *jeu, int posX, int posY) {
         case 4:
             if(jeu->argent >= TOUR_5_COUT) {
                 interface->outilsel = OUTIL_TOUR_5;
-                interface_MAJOutils(interface, jeu);                        
+                interface_MAJOutils(interface, jeu);
                 wprintw(interface->infos->interieur, "\nOutil tour 5 selectionne. Cliquez sur un carre d'herbe.");
             }
             else
@@ -297,7 +304,7 @@ void interface_outils(interface_t *interface, jeu_t *jeu, int posX, int posY) {
  * @param interface l'interface
  * @param jeu l'état du jeu
  * @param posX la position X du clic dans la fenêtre
- * @param posY la position Y du clic dans la fenêtre 
+ * @param posY la position Y du clic dans la fenêtre
  */
 void interface_attaques(interface_t *interface, jeu_t *jeu, int posX, int posY) {
     if((posX >= 25) && (posX <= 27)) {
@@ -414,7 +421,8 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY) {
         case OUTIL_TOUR_1:
             if((jeu->carte[posY][posX] == CASE_VIDE) && (jeu->argent >= TOUR_1_COUT)) {
                 jeu->argent -= TOUR_1_COUT;
-                wprintw(interface->infos->interieur, "\nTour 1 posee... pour de faux !");
+                wprintw(interface->infos->interieur, "\nTour 1 posee !");
+                mvwprintw(interface->carte->interieur,posY,posX,"A");
                 interface_MAJOutils(interface, jeu);
                 interface_MAJEtat(interface, jeu);
                 interface_MAJAttaques(interface, jeu);
@@ -426,7 +434,8 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY) {
         case OUTIL_TOUR_2:
             if((jeu->carte[posY][posX] == CASE_VIDE) && (jeu->argent >= TOUR_2_COUT)) {
                 jeu->argent -= TOUR_2_COUT;
-                wprintw(interface->infos->interieur, "\nTour 2 posee... pour de faux !");
+                wprintw(interface->infos->interieur, "\nTour 2 posee !");
+                mvwprintw(interface->carte->interieur,posY,posX,"B");
                 interface_MAJOutils(interface, jeu);
                 interface_MAJEtat(interface, jeu);
                 interface_MAJAttaques(interface, jeu);
@@ -438,7 +447,8 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY) {
         case OUTIL_TOUR_3:
             if((jeu->carte[posY][posX] == CASE_VIDE) && (jeu->argent >= TOUR_3_COUT)) {
                 jeu->argent -= TOUR_3_COUT;
-                wprintw(interface->infos->interieur, "\nTour 3 posee... pour de faux !");
+                wprintw(interface->infos->interieur, "\nTour 3 posee !");
+                mvwprintw(interface->carte->interieur,posY,posX,"C");
                 interface_MAJOutils(interface, jeu);
                 interface_MAJEtat(interface, jeu);
                 interface_MAJAttaques(interface, jeu);
@@ -450,7 +460,8 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY) {
         case OUTIL_TOUR_4:
             if((jeu->carte[posY][posX] == CASE_VIDE) && (jeu->argent >= TOUR_4_COUT)) {
                 jeu->argent -= TOUR_4_COUT;
-                wprintw(interface->infos->interieur, "\nTour 4 posee... pour de faux !");
+                wprintw(interface->infos->interieur, "\nTour 4 posee !");
+                mvwprintw(interface->carte->interieur,posY,posX,"D");
                 interface_MAJOutils(interface, jeu);
                 interface_MAJEtat(interface, jeu);
                 interface_MAJAttaques(interface, jeu);
@@ -462,7 +473,8 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY) {
         case OUTIL_TOUR_5:
             if((jeu->carte[posY][posX] == CASE_VIDE) && (jeu->argent >= TOUR_5_COUT)) {
                 jeu->argent -= TOUR_5_COUT;
-                wprintw(interface->infos->interieur, "\nTour 5 posee... pour de faux !");
+                wprintw(interface->infos->interieur, "\nTour 5 posee !");
+                mvwprintw(interface->carte->interieur,posY,posX,"E");
                 interface_MAJOutils(interface, jeu);
                 interface_MAJEtat(interface, jeu);
                 interface_MAJAttaques(interface, jeu);

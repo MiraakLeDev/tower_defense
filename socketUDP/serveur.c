@@ -97,12 +97,6 @@ void set_map(jeu_t* jeu,int fichier){
         jeu->carte[i][j] = case_terrain;
         j++;
     }
-    for ( i = 0; i < 15; i++) {
-      for ( j = 0; j < 15; j++) {
-        printf("[%d]",jeu->carte[i][j] );
-      }
-      printf("\n");
-    }
 }
 
 void set_scenar(jeu_t* jeu,int fichier){

@@ -37,7 +37,6 @@ typedef struct {
 
 void initialiser_tour(tour_t* tour,int type);
 void initialiser_unite(unite_t* unite,int type);
-void deplacement_unite(unite_t* unite,jeu_t* jeu);
 int deplacement_haut(unsigned char carte[15][15],int x, int y);
 int deplacement_bas(unsigned char carte[15][15],int x, int y);
 int deplacement_gauche(unsigned char carte[15][15],int x, int y);

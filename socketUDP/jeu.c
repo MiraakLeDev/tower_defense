@@ -1,24 +1,6 @@
-
-
 #include "jeu.h"
-#include "ncurses.h"
-#include "fenetre.h"
-#include "interface.h"
-#include <string.h>
-#include <unistd.h>
-#include<stdio.h>
-#include <time.h>
-void deplacement_unite(unite_t* unite,jeu_t* jeu){
+#include "string.h"
 
-    while (unite->vie > 0 &&   trouver_chemin(jeu->carte,unite) !=1){
-      /*printf("%s:[%d][%d]=%d",unite->nom,unite->position[0],unite->position[1],jeu->carte[unite->position[0]][unite->position[1]]);*/
-      usleep(unite->vitesse*1000);
-    }
-
-
-
-
-}
 
 int deplacement_haut(unsigned char carte[15][15],int x, int y){
   if (carte[x][y] < carte[x+1][y] || carte[x][y]==254) {
@@ -61,7 +43,9 @@ int trouver_chemin(unsigned char carte[15][15],unite_t* unite){
     int y = (int)unite->position[1];
     if (x>=0 && x<=14 && y>=0 && y<=14 ) {
        if (deplacement_bas(carte,x,y)==1) {
+
          unite->position[0]--;
+
        }else if(deplacement_haut(carte,x,y)==1){
          unite->position[0]++;
        }else if(deplacement_gauche(carte,x,y)==1){

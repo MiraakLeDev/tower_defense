@@ -18,6 +18,7 @@
 #include "ncurses.h"
 #include "fenetre.h"
 #include "interface.h"
+pthread_mutex_t mutex;
 jeu_t jeu;
 typedef struct arguments{
   int num; /*Utilisé pour le thread scenario pour la socket + thread unite pour le type de l'unite*/
@@ -25,7 +26,36 @@ typedef struct arguments{
   int id_joueur;
 
 }arguments_t;
+void deplacement_unite(unite_t* unite,jeu_t* jeu,interface_t* interface){
 
+    while (unite->vie > 0 && trouver_chemin(jeu->carte,unite) !=1){
+        pthread_mutex_lock(&mutex);
+        if (strcmp(unite->nom,"Soldat") == 0) {
+          mvwprintw(interface->carte->interieur,unite->position[0],unite->position[1],"x");
+        }else if (strcmp(unite->nom,"Commando") == 0) {
+          mvwprintw(interface->carte->interieur,unite->position[0],unite->position[1],"y");
+        }else if (strcmp(unite->nom,"Vehicule") == 0) {
+          mvwprintw(interface->carte->interieur,unite->position[0],unite->position[1],"u");
+        }else if (strcmp(unite->nom,"Missile") == 0) {
+          mvwprintw(interface->carte->interieur,unite->position[0],unite->position[1],"w");
+        }else if (strcmp(unite->nom,"Char") == 0) {
+          mvwprintw(interface->carte->interieur,unite->position[0],unite->position[1],"s");
+        }else{
+          mvwprintw(interface->carte->interieur,unite->position[0],unite->position[1],"?");
+        }
+        wrefresh(interface->carte->interieur);
+
+        pthread_mutex_unlock(&mutex);
+        usleep(unite->vitesse*1000);
+        pthread_mutex_lock(&mutex);
+        mvwaddch(interface->carte->interieur,unite->position[0],unite->position[1],' ' | COLOR_PAIR(COULEUR_CHEMIN));
+        wrefresh(interface->carte->interieur);
+        pthread_mutex_unlock(&mutex);
+
+
+
+    }
+}
 void* spawn(void* args){
     unite_t unite;
     arguments_t *unite_arg = (arguments_t*)args;
@@ -33,9 +63,9 @@ void* spawn(void* args){
     initialiser_unite(&unite,unite_arg->num);
     unite.position[0]= jeu.spawn[unite_arg->id_joueur][0];
     unite.position[1]= jeu.spawn[unite_arg->id_joueur][1];
-    deplacement_unite(&unite,&jeu);
-    wprintw(unite_arg->interface->infos->interieur,"\nUnite detruite");
-    wrefresh(unite_arg->interface->infos->interieur);
+    deplacement_unite(&unite,&jeu,unite_arg->interface);
+    /*wprintw(unite_arg->interface->infos->interieur,"\nUnite detruite");*/
+    /*wrefresh(unite_arg->interface->infos->interieur);*/
     pthread_exit(NULL);
 
 }
@@ -57,7 +87,10 @@ void* scenario(void* args){
                 perror("Erreur lors de la lecture de la taille du message ");
                 exit(EXIT_FAILURE);
             }
+            pthread_mutex_lock(&mutex);
             wprintw(arguments->interface->infos->interieur,"\nMessage : %s",msg);
+            wrefresh(arguments->interface->infos->interieur);
+            pthread_mutex_unlock(&mutex);
         }
         else{
             if (recv(arguments->num, &donnees, sizeof(unsigned int), 0) == -1) {
@@ -75,6 +108,7 @@ void* scenario(void* args){
 
         cmp++;
     }
+    free(arguments);
     pthread_exit(NULL);
 }
 
@@ -87,6 +121,13 @@ int main(int argc, char *argv[]) {
     bool quitter = FALSE;
     pthread_t thread;
     arguments_t arguments;
+
+
+    if (pthread_mutex_init(&mutex, NULL) != 0)
+    {
+        printf("\n mutex init failed\n");
+        return 1;
+    }
 
     /* Vérification des arguments */
     if(argc != 2) {
@@ -141,7 +182,8 @@ int main(int argc, char *argv[]) {
     refresh();
     /* Création de l'interface */
     interface = interface_creer(&jeu);
-
+    jeu.argent = 2000;
+    wrefresh(interface.outils->interieur);
     /* Vérification des dimensions du terminal */
     if((COLS < LARGEUR) || (LINES < HAUTEUR)) {
         ncurses_stopper();
@@ -177,6 +219,7 @@ int main(int argc, char *argv[]) {
         perror("Erreur lors de la fermeture de la socket ");
         exit(EXIT_FAILURE);
     }
+    pthread_mutex_destroy(&mutex);
 
     return EXIT_SUCCESS;
 }
