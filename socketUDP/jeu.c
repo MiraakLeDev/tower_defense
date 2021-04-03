@@ -64,6 +64,7 @@ int trouver_chemin(unsigned char carte[15][15],unite_t* unite){
 void initialiser_tour(tour_t* tour,int type){
   switch (type) {
     case 1:
+      strncpy(tour->nom,"A",5);
       tour->cout = TOUR_1_COUT;
       tour->degat_min = TOUR_1_TIR_MIN;
       tour->degat_max = TOUR_1_TIR_MAX;
@@ -71,6 +72,7 @@ void initialiser_tour(tour_t* tour,int type){
       tour->vitesse = TOUR_1_VITESSE;
       break;
     case 2:
+      strncpy(tour->nom,"B",5);
       tour->cout = TOUR_2_COUT;
       tour->degat_min = TOUR_2_TIR_MIN;
       tour->degat_max = TOUR_2_TIR_MAX;
@@ -78,6 +80,7 @@ void initialiser_tour(tour_t* tour,int type){
       tour->vitesse = TOUR_2_VITESSE;
       break;
     case 3:
+      strncpy(tour->nom,"C",5);
       tour->cout = TOUR_3_COUT;
       tour->degat_min = TOUR_3_TIR_MIN;
       tour->degat_max = TOUR_3_TIR_MAX;
@@ -85,6 +88,7 @@ void initialiser_tour(tour_t* tour,int type){
       tour->vitesse = TOUR_3_VITESSE;
       break;
     case 4:
+      strncpy(tour->nom,"D",5);
       tour->cout = TOUR_4_COUT;
       tour->degat_min = TOUR_4_TIR_MIN;
       tour->degat_max = TOUR_4_TIR_MAX;
@@ -92,6 +96,7 @@ void initialiser_tour(tour_t* tour,int type){
       tour->vitesse = TOUR_4_VITESSE;
       break;
     case 5:
+      strncpy(tour->nom,"E",5);
       tour->cout = TOUR_5_COUT;
       tour->degat_min = TOUR_5_TIR_MIN;
       tour->degat_max = TOUR_5_TIR_MAX;

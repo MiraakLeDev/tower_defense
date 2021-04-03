@@ -5,8 +5,23 @@
 #include<stdio.h>
 #include <string.h>
 #include "interface.h"
+#include <pthread.h>
+typedef struct arg_tour{
+  char* nom;
+  int x;
+  int y;
+  jeu_t* jeu;
+}arg_tour;
 
-
+void* spawn_tour(void* args){
+  arg_tour *tour = (arg_tour*)args;
+  while (tour->jeu->vies != 0) {
+      if (/* condition */) {
+        /* code */
+      }
+  }
+  return NULL;
+}
 /**
  * Définition de la palette.
  */
@@ -398,7 +413,9 @@ void interface_attaques(interface_t *interface, jeu_t *jeu, int posX, int posY) 
  * @param posX la position X du clic dans la fenêtre
  * @param posY la position Y du clic dans la fenêtre
  */
-void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY) {
+void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY, int* cmp) {
+    pthread_t thread_tour[100];
+    arg_tour arg_tour;
     switch(interface->outilsel) {
         case OUTIL_NONE:
             /* Pas d'outils sélectionné : on affiche le contenu de la case */
@@ -423,6 +440,11 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY) {
                 jeu->argent -= TOUR_1_COUT;
                 wprintw(interface->infos->interieur, "\nTour 1 posee !");
                 mvwprintw(interface->carte->interieur,posY,posX,"A");
+                arg_tour.nom = "A";
+                arg_tour.x = posX;
+                arg_tour.y = posY;
+                arg_tour.jeu = jeu;
+                pthread_create(&thread_tour[*cmp],NULL,&spawn_tour,(void*)&arg_tour);
                 interface_MAJOutils(interface, jeu);
                 interface_MAJEtat(interface, jeu);
                 interface_MAJAttaques(interface, jeu);
@@ -436,6 +458,11 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY) {
                 jeu->argent -= TOUR_2_COUT;
                 wprintw(interface->infos->interieur, "\nTour 2 posee !");
                 mvwprintw(interface->carte->interieur,posY,posX,"B");
+                arg_tour.nom = "B";
+                arg_tour.x = posX;
+                arg_tour.y = posY;
+                arg_tour.jeu = jeu;
+                pthread_create(&thread_tour[*cmp],NULL,&spawn_tour,(void*)&arg_tour);
                 interface_MAJOutils(interface, jeu);
                 interface_MAJEtat(interface, jeu);
                 interface_MAJAttaques(interface, jeu);
@@ -449,6 +476,11 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY) {
                 jeu->argent -= TOUR_3_COUT;
                 wprintw(interface->infos->interieur, "\nTour 3 posee !");
                 mvwprintw(interface->carte->interieur,posY,posX,"C");
+                arg_tour.nom = "C";
+                arg_tour.x = posX;
+                arg_tour.y = posY;
+                arg_tour.jeu = jeu;
+                pthread_create(&thread_tour[*cmp],NULL,&spawn_tour,(void*)&arg_tour);
                 interface_MAJOutils(interface, jeu);
                 interface_MAJEtat(interface, jeu);
                 interface_MAJAttaques(interface, jeu);
@@ -462,6 +494,11 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY) {
                 jeu->argent -= TOUR_4_COUT;
                 wprintw(interface->infos->interieur, "\nTour 4 posee !");
                 mvwprintw(interface->carte->interieur,posY,posX,"D");
+                arg_tour.nom = "D";
+                arg_tour.x = posX;
+                arg_tour.y = posY;
+                arg_tour.jeu = jeu;
+                pthread_create(&thread_tour[*cmp],NULL,&spawn_tour,(void*)&arg_tour);
                 interface_MAJOutils(interface, jeu);
                 interface_MAJEtat(interface, jeu);
                 interface_MAJAttaques(interface, jeu);
@@ -475,6 +512,11 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY) {
                 jeu->argent -= TOUR_5_COUT;
                 wprintw(interface->infos->interieur, "\nTour 5 posee !");
                 mvwprintw(interface->carte->interieur,posY,posX,"E");
+                arg_tour.nom = "E";
+                arg_tour.x = posX;
+                arg_tour.y = posY;
+                arg_tour.jeu = jeu;
+                pthread_create(&thread_tour[*cmp],NULL,&spawn_tour,(void*)&arg_tour);
                 interface_MAJOutils(interface, jeu);
                 interface_MAJEtat(interface, jeu);
                 interface_MAJAttaques(interface, jeu);
@@ -505,7 +547,7 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY) {
  * @param jeu les paramètres de la partie
  * @param c la touche pressée
  */
-void interface_main(interface_t *interface, jeu_t *jeu, int c) {
+void interface_main(interface_t *interface, jeu_t *jeu, int c,int* cmp) {
     int sourisX, sourisY, posX, posY;
 
     if((c == KEY_MOUSE) && (souris_getpos(&sourisX, &sourisY, NULL) == OK)) {
@@ -518,7 +560,7 @@ void interface_main(interface_t *interface, jeu_t *jeu, int c) {
             interface_attaques(interface, jeu, posX, posY);
         }
         else if(fenetre_getcoordonnees(interface->carte, sourisX, sourisY, &posX, &posY)) {
-            interface_carte(interface, jeu, posX, posY);
+            interface_carte(interface, jeu, posX, posY,cmp);
         }
     }
     else {

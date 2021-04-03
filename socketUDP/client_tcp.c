@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
     bool quitter = FALSE;
     pthread_t thread;
     arguments_t arguments;
-
+    int cmp=0;
 
     if (pthread_mutex_init(&mutex, NULL) != 0)
     {
@@ -203,7 +203,8 @@ int main(int argc, char *argv[]) {
       if((ch == 'Q') || (ch == 'q'))
         quitter = true;
       else{
-        interface_main(&interface, &jeu, ch);
+        interface_main(&interface, &jeu, ch,&cmp);
+        cmp++;
         wrefresh(interface.infos->interieur);
       }
     }

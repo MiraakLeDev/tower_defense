@@ -134,7 +134,7 @@ void interface_attaques(interface_t *interface, jeu_t *jeu, int posX, int posY);
  * @param posX la position X du clic dans la fenêtre
  * @param posY la position Y du clic dans la fenêtre
  */
-void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY);
+void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY,int* cmp);
 
 /**
  * Gestion des actions de l'utilisateur dans l'interface.
@@ -142,6 +142,6 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY);
  * @param jeu les paramètres de la partie
  * @param c la touche pressée
  */
-void interface_main(interface_t *interface, jeu_t *jeu, int c);
+void interface_main(interface_t *interface, jeu_t *jeu, int c,int* cmp);
 
 #endif
