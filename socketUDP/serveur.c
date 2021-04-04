@@ -213,8 +213,8 @@ void* thread_partie(void* arg_cellule) {
           exit(EXIT_FAILURE);
         }
         printf("Envoie de la map au joueur\n");
-        printf("places disponibles = %d\n", cellule->place_libre);
         cellule->place_libre--;
+        printf("places disponibles = %d\n", cellule->place_libre);
         cmp--;
 
         read_scenar(&jeu, fichier,cellule);
