@@ -16,9 +16,7 @@ typedef struct arg_tour{
 void* spawn_tour(void* args){
   arg_tour *tour = (arg_tour*)args;
   while (tour->jeu->vies != 0) {
-      if (/* condition */) {
-        /* code */
-      }
+      
   }
   return NULL;
 }

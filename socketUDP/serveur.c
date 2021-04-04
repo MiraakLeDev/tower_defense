@@ -120,7 +120,7 @@ void read_scenar(jeu_t* jeu,int fichier,cellule_tcp* cellule){
     unsigned int donnees=0;
     unsigned char type;
     long temps=0;
-    char msg[50];
+    char msg[255];
     while (read(fichier,&temps,sizeof(long)) > 0) {
         if(read(fichier,&type,sizeof(unsigned char)) < 0){
             perror("ERREUR : Lecture du scénario \n");
@@ -133,12 +133,12 @@ void read_scenar(jeu_t* jeu,int fichier,cellule_tcp* cellule){
 
         }
         if ((int)type == 0) {
-            if(read(fichier,&msg,sizeof(char)*50) < 0){
+            if(read(fichier,&msg,sizeof(char)*255) < 0){
                 perror("ERREUR : Lecture du scénario \n");
                 exit(EXIT_FAILURE);
             }
 
-            if(send(cellule->socketClient[3],&msg, sizeof(char)*50, 0) == -1) {
+            if(send(cellule->socketClient[3],&msg, sizeof(char)*255, 0) == -1) {
                 perror("Erreur lors de l'envoi du message ");
                 exit(EXIT_FAILURE);
             }

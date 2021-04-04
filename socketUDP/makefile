@@ -3,7 +3,7 @@
 #
 
 EXEC =serveur client_udp client_tcp
-OBJETS =cellule_tcp.o liste_tcp.o ncurses.o fenetre.o interface.o jeu.o
+OBJETS =cellule_tcp.o liste_tcp.o ncurses.o fenetre.o interface.o jeu.o liste_adj.o cellule_unite.o
 NOM_PROJET = socketUDP
 
 #
@@ -82,12 +82,15 @@ archive: clean
 	@echo "Termine."
 
 # DEPENDANCES
-serveur.o: serveur.c
-client_udp.o: client_udp.c
-client_tcp.o: client_tcp.c
-cellule_tcp.o : cellule_tcp.c cellule_tcp.h
-liste_tcp.o : liste_tcp.c liste_tcp.h
+cellule_tcp.o: cellule_tcp.c cellule_tcp.h
+liste_tcp.o: liste_tcp.c liste_tcp.h cellule_tcp.h
 ncurses.o: ncurses.c ncurses.h
 fenetre.o: fenetre.c fenetre.h
-interface.o: interface.c interface.h
-jeu.o : jeu.c jeu.h
+interface.o: interface.c fenetre.h ncurses.h jeu.h interface.h
+jeu.o: jeu.c jeu.h
+liste_adj.o: liste_adj.c liste_adj.h cellule_unite.h jeu.h
+cellule_unite.o: cellule_unite.c cellule_unite.h jeu.h
+serveur.o: serveur.c include.h liste_tcp.h cellule_tcp.h jeu.h
+client_udp.o: client_udp.c include.h
+client_tcp.o: client_tcp.c jeu.h ncurses.h fenetre.h interface.h \
+ liste_adj.h cellule_unite.h

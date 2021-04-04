@@ -1,7 +1,6 @@
 #include "jeu.h"
 #include "string.h"
 
-
 int deplacement_haut(unsigned char carte[15][15],int x, int y){
   if (carte[x][y] < carte[x+1][y] || carte[x][y]==254) {
     if (carte[x+1][y] >=4 && carte[x+1][y] <=229) {
@@ -102,40 +101,6 @@ void initialiser_tour(tour_t* tour,int type){
       tour->degat_max = TOUR_5_TIR_MAX;
       tour->portee = TOUR_5_PORTEE;
       tour->vitesse = TOUR_5_VITESSE;
-      break;
-  }
-}
-void initialiser_unite(unite_t* unite,int type){
-  switch (type) {
-    case 1:
-      strncpy(unite->nom,"Soldat",30);
-      unite->cout = SOLDAT_COUT;
-      unite->vie = SOLDAT_VIE;
-      unite->vitesse = SOLDAT_VITESSE;
-      break;
-    case 2:
-      strncpy(unite->nom,"Commando",30);
-      unite->cout = COMMANDO_COUT;
-      unite->vie = COMMANDO_VIE;
-      unite->vitesse = COMMANDO_VITESSE;
-      break;
-    case 3:
-      strncpy(unite->nom,"Vehicule",30);
-      unite->cout = VEHICULE_COUT;
-      unite->vie = VEHICULE_VIE;
-      unite->vitesse = VEHICULE_VITESSE;
-      break;
-    case 4:
-      strncpy(unite->nom,"Missile",30);
-      unite->cout = MISSILE_COUT;
-      unite->vie = MISSILE_VIE;
-      unite->vitesse = MISSILE_VITESSE;
-      break;
-    case 5:
-      strncpy(unite->nom,"Char",30);
-      unite->cout = CHAR_COUT;
-      unite->vie = CHAR_VIE;
-      unite->vitesse = CHAR_VITESSE;
       break;
   }
 }
