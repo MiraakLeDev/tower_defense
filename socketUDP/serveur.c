@@ -15,7 +15,7 @@
 #include <dirent.h>      /* Pour parcourir les dossiers */
 #include <sys/wait.h>
 #include <time.h>
-#include <pthread.h>
+#include <pthread.h>     /* Pour thread */
 
 #include "include.h"
 #include "liste_tcp.h"
@@ -24,9 +24,9 @@
 #define NB_MAPS 3
 #define NB_SCENAR 3
 
+liste_tcp* liste_serveurs;
 
 int stop = 0;
-liste_tcp* liste_serveurs;
 void handler(int signum)
 {
     if(signum == SIGINT){
@@ -67,7 +67,7 @@ void recup_data(DIR* d, char* nom_dossier, char contenu[][30]){
 
 /**** PARTIE SERVEUR TCP ****/
 
-/* Fonction qui remplie la matrice JEU */
+/* Fonction qui remplie la matrice carte d'un jeu_t */
 void set_map(jeu_t* jeu,int fichier){
     size_t taille_texte;
     unsigned char case_terrain;
@@ -99,14 +99,9 @@ void set_map(jeu_t* jeu,int fichier){
     }
 }
 
+/* Lecture de la description du scénario */
 void set_scenar(jeu_t* jeu,int fichier){
     size_t taille_texte;
-/*
-    long type;
-    unsigned int donnees_int;
-    unsigned char donnees_char;
-    char message[255];
-*/
     lseek(fichier,0,SEEK_SET);
     if(read(fichier,&taille_texte,sizeof(size_t)) < 0){
         perror("ERREUR : Lecture du scénario \n");
@@ -118,20 +113,14 @@ void set_scenar(jeu_t* jeu,int fichier){
         exit(EXIT_FAILURE);
     }
     printf("description scenario : %s \n",jeu->description);
-/*
-    while (read(fichier,&type,sizeof(long)) > 0) {
-        if(read(fichier,jeu->description,taille_texte) < 0){
-            perror("ERREUR : Lecture du scénario \n");
-            exit(EXIT_FAILURE);
-        }
-    }
-    */
 }
+
+/* Lecture ligne par ligne du scénario */
 void read_scenar(jeu_t* jeu,int fichier,cellule_tcp* cellule){
     unsigned int donnees=0;
     unsigned char type;
     long temps=0;
-    char msg[255];
+    char msg[50];
     while (read(fichier,&temps,sizeof(long)) > 0) {
         if(read(fichier,&type,sizeof(unsigned char)) < 0){
             perror("ERREUR : Lecture du scénario \n");
@@ -144,15 +133,15 @@ void read_scenar(jeu_t* jeu,int fichier,cellule_tcp* cellule){
 
         }
         if ((int)type == 0) {
-            if(read(fichier,&msg,sizeof(char)*255) < 0){
+            if(read(fichier,&msg,sizeof(char)*50) < 0){
                 perror("ERREUR : Lecture du scénario \n");
                 exit(EXIT_FAILURE);
             }
 
-              if(send(cellule->socketClient[3],&msg, sizeof(char)*255, 0) == -1) {
-                  perror("Erreur lors de l'envoi du message ");
-                  exit(EXIT_FAILURE);
-              }
+            if(send(cellule->socketClient[3],&msg, sizeof(char)*50, 0) == -1) {
+                perror("Erreur lors de l'envoi du message ");
+                exit(EXIT_FAILURE);
+            }
 
             sleep(temps/1000);
         }
@@ -176,6 +165,8 @@ void read_scenar(jeu_t* jeu,int fichier,cellule_tcp* cellule){
           exit(EXIT_FAILURE);
     }
 }
+
+/* Fonction exécutée par le serveur TCP gérant une partie */
 void* thread_partie(void* arg_cellule) {
     int cmp = MAX_JOUEURS - 1, fichier;
     char map_nom[MAX_CHAR + 7] = "cartes/";
@@ -191,6 +182,7 @@ void* thread_partie(void* arg_cellule) {
         exit(EXIT_FAILURE);
     }
     set_map(&jeu, fichier);
+
     /* CHARGEMENT DU SCENARIO */
     strcat(scenar_nom, cellule->scenar);
     strcat(scenar_nom, ".bin");
@@ -421,11 +413,10 @@ int main(int argc, char *argv[]) {
     }
     /* Fermeture de la socket */
     if(close(sockfd) == -1) {
-    perror("Erreur lors de la fermeture de la socket ");
-    exit(EXIT_FAILURE);
+        perror("Erreur lors de la fermeture de la socket ");
+        exit(EXIT_FAILURE);
     }
-
     printf("Serveur terminé.\n");
-
+    free(liste_serveurs);
     return EXIT_SUCCESS;
 }

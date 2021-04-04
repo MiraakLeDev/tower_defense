@@ -72,7 +72,7 @@ void* spawn(void* args){
 void* scenario(void* args){
     unsigned int donnees=0;
     unsigned char type=0;
-    char msg[255];
+    char msg[50];
     arguments_t *arguments = (arguments_t*)args;
     arguments_t unite;
     pthread_t thread[100];
@@ -83,7 +83,7 @@ void* scenario(void* args){
             exit(EXIT_FAILURE);
         }
         if ((int)type == 0) {
-            if (recv(arguments->num, &msg, sizeof(char)*255, 0) == -1) {
+            if (recv(arguments->num, &msg, sizeof(char)*50, 0) == -1) {
                 perror("Erreur lors de la lecture de la taille du message ");
                 exit(EXIT_FAILURE);
             }
