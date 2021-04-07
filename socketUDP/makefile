@@ -3,7 +3,7 @@
 #
 
 EXEC =serveur client_udp client_tcp
-OBJETS =cellule_tcp.o liste_tcp.o ncurses.o fenetre.o interface.o jeu.o liste_adj.o cellule_unite.o
+OBJETS =cellule_tcp.o liste_tcp.o ncurses.o fenetre.o interface.o jeu.o liste_adj.o cellule_unite.o unite.o tour.o
 NOM_PROJET = socketUDP
 
 #
@@ -24,7 +24,7 @@ OBJETS_O = $(OBJETS) $(EXEC_O)
 #
 
 CC = gcc
-CCFLAGS = -Wall -O3 -ansi -pedantic -Werror -D _XOPEN_SOURCE
+CCFLAGS = -Wall -O3 -ansi -pedantic -Werror -D _XOPEN_SOURCE -D_REENTRANT
 CCFLAGS_DEBUG = -D _DEBUG_
 CCFLAGS = $(CCFLAGS_STD)
 CCLIBS = -lncurses -lpthread
@@ -88,9 +88,11 @@ ncurses.o: ncurses.c ncurses.h
 fenetre.o: fenetre.c fenetre.h
 interface.o: interface.c fenetre.h ncurses.h jeu.h interface.h
 jeu.o: jeu.c jeu.h
-liste_adj.o: liste_adj.c liste_adj.h cellule_unite.h jeu.h
-cellule_unite.o: cellule_unite.c cellule_unite.h jeu.h
+liste_adj.o: liste_adj.c liste_adj.h cellule_unite.h unite.h
+cellule_unite.o: cellule_unite.c cellule_unite.h unite.h
+unite.o: unite.c unite.h jeu.h
+tour.o: tour.c tour.h jeu.h
 serveur.o: serveur.c include.h liste_tcp.h cellule_tcp.h jeu.h
 client_udp.o: client_udp.c include.h
-client_tcp.o: client_tcp.c jeu.h ncurses.h fenetre.h interface.h \
- liste_adj.h cellule_unite.h
+client_tcp.o: client_tcp.c liste_adj.h cellule_unite.h unite.h tour.h \
+ jeu.h ncurses.h fenetre.h interface.h

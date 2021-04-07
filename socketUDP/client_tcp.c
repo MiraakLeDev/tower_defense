@@ -14,114 +14,73 @@
 #include <pthread.h>    /* Pour thread */
 
 #include <time.h>
-
 #include "liste_adj.h"
-#include "jeu.h"
+#include "tour.h"
 #include "ncurses.h"
 #include "fenetre.h"
 #include "interface.h"
 
 pthread_mutex_t mutex;
-
 jeu_t jeu;
+
 typedef struct arguments
 {
-    int num; /*Utilisé pour le thread scenario pour la socket + thread unite pour le type de l'unite*/
+    int num;                /* Utilisé pour le thread scenario pour la socket + thread unite pour le type de l'unite*/
     interface_t *interface;
     int id_joueur;
-    liste_adj *liste[15];
-
+    pthread_mutex_t *mutex;
 } arguments_t;
-void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t *interface, liste_adj **liste)
-{
-    int tmp = 0;
-    while (unite->vie > 0)
-    {
 
-        tmp = unite->position[0];
-        if (trouver_chemin(jeu->carte, unite) == 1)
-        {
-            break;
-        }
-
-        if (tmp != unite->position[0])
-        {
-            ajouter_cellule_unite(liste[unite->position[0]], retirer_cellule(liste[tmp], unite));
-        }
-
-        pthread_mutex_lock(&mutex);
-        if (strcmp(unite->nom, "Soldat") == 0)
-        {
-            mvwprintw(interface->carte->interieur, unite->position[0], unite->position[1], "s");
-        }
-        else if (strcmp(unite->nom, "Commando") == 0)
-        {
-            mvwprintw(interface->carte->interieur, unite->position[0], unite->position[1], "c");
-        }
-        else if (strcmp(unite->nom, "Vehicule") == 0)
-        {
-            mvwprintw(interface->carte->interieur, unite->position[0], unite->position[1], "v");
-        }
-        else if (strcmp(unite->nom, "Missile") == 0)
-        {
-            mvwprintw(interface->carte->interieur, unite->position[0], unite->position[1], "m");
-        }
-        else if (strcmp(unite->nom, "Char") == 0)
-        {
-            mvwprintw(interface->carte->interieur, unite->position[0], unite->position[1], "t");
-        }
-        else
-        {
-            mvwprintw(interface->carte->interieur, unite->position[0], unite->position[1], "?");
-        }
-        wrefresh(interface->carte->interieur);
-
-        pthread_mutex_unlock(&mutex);
-
-        usleep(unite->vitesse * 1000);
-
-        pthread_mutex_lock(&mutex);
-        mvwaddch(interface->carte->interieur, unite->position[0], unite->position[1], ' ' | COLOR_PAIR(COULEUR_CHEMIN));
-        wrefresh(interface->carte->interieur);
-        pthread_mutex_unlock(&mutex);
-    }
-}
-void *spawn(void *args)
+typedef struct arguments_unite
 {
     unite_t unite;
-    arguments_t *unite_arg = (arguments_t *)args;
+    interface_t *interface;
+    pthread_mutex_t *mutex;
+} arg_unit;
+
+
+void *spawn_unite(void *args)
+{
+    unite_t unite;
+    arg_unit *arg_unite = (arg_unit *)args;
     cellule_unite *unite_c;
 
-    initialiser_unite(&unite, unite_arg->num);
-    unite.position[0] = jeu.spawn[unite_arg->id_joueur][0];
-    unite.position[1] = jeu.spawn[unite_arg->id_joueur][1];
+    /* on l'englobe dans une cellule et on l'ajoute à la bonne liste_adj */
+    unite = arg_unite->unite;
     unite_c = initialiser_cellule_unite(&unite);
-    ajouter_cellule_unite(unite_arg->liste[unite.position[0]], unite_c);
+    ajouter_cellule_unite(&jeu.liste[unite.position[0]], unite_c);
 
+    /*
     pthread_mutex_lock(&mutex);
     wprintw(unite_arg->interface->infos->interieur, "\nUnite Crée %s", unite_arg->liste[unite.position[0]]->premier->unite->nom);
     wrefresh(unite_arg->interface->infos->interieur);
     pthread_mutex_unlock(&mutex);
+    */
 
-    deplacement_unite(&unite, &jeu, unite_arg->interface, unite_arg->liste);
+    deplacement_unite(&unite, &jeu, arg_unite->interface, arg_unite->mutex);
 
+    /*
     pthread_mutex_lock(&mutex);
     wprintw(unite_arg->interface->infos->interieur, "\nUnite MORTE");
     wrefresh(unite_arg->interface->infos->interieur);
     pthread_mutex_unlock(&mutex);
+    */
 
-    supprimer_cellule_unite(unite_arg->liste[unite.position[0]], &unite);
+    /* Une fois que l'unité a fini de se deplacer ou qu'elle s'est faite tuer, on la supprime en mémoire */
+    supprimer_cellule_unite(&jeu.liste[unite.position[0]], &unite);
     pthread_exit(NULL);
 }
+
+
 void *scenario(void *args)
 {
     unsigned int donnees = 0;
     unsigned char type = 0;
     char msg[255];
     arguments_t *arguments = (arguments_t *)args;
-    arguments_t unite;
-    pthread_t thread[100];
-    int cmp = 0, i = 0;
+    arg_unit arg_unite;
+    unite_t unite;
+    int i = 0;
     while ((int)type != 4)
     {
         if (recv(arguments->num, &type, sizeof(unsigned char), 0) == -1)
@@ -149,19 +108,17 @@ void *scenario(void *args)
                 exit(EXIT_FAILURE);
             }
 
-            /*Spawn unites*/
-            unite.num = donnees;
-            unite.interface = arguments->interface;
-            unite.id_joueur = arguments->id_joueur;
-            for (i = 0; i < 15; i++)
-            {
-                unite.liste[i] = arguments->liste[i];
-            }
+            /* Initialise unite */
+            initialiser_unite(&unite, donnees);
+            unite.position[0] = jeu.spawn[0][0];
+            unite.position[1] = jeu.spawn[0][1];
 
-            pthread_create(&thread[cmp], NULL, &spawn, (void *)&unite);
+            /* prépare les arguments à passer au thread */
+            arg_unite.unite = unite;
+            arg_unite.mutex = &mutex;
+            arg_unite.interface = arguments->interface;
+            pthread_create(&unite.thread, NULL, spawn_unite, (void *)&arg_unite);
         }
-
-        cmp++;
     }
     free(arguments);
     pthread_exit(NULL);
@@ -176,13 +133,11 @@ int main(int argc, char *argv[])
     bool quitter = FALSE;
     pthread_t thread;
     arguments_t arguments;
-    int cmp = 0, i = 0;
-
-    liste_adj liste[15];
+    int i = 0;
 
     for (i = 0; i < 15; i++)
     {
-        liste[i] = initialiser_liste_adj();
+        jeu.liste[i] = initialiser_liste_adj();
     }
 
     if (pthread_mutex_init(&mutex, NULL) != 0)
@@ -262,10 +217,6 @@ int main(int argc, char *argv[])
     arguments.num = fd;
     arguments.interface = &interface;
     arguments.id_joueur = 0;
-    for (i = 0; i < 15; i++)
-    {
-        arguments.liste[i] = &liste[i];
-    }
 
     pthread_create(&thread, NULL, &scenario, (void *)&arguments);
 
@@ -277,8 +228,7 @@ int main(int argc, char *argv[])
             quitter = true;
         else
         {
-            interface_main(&interface, &jeu, ch, &cmp);
-            cmp++;
+            interface_main(&interface, &jeu, ch);
             wrefresh(interface.infos->interieur);
         }
     }
@@ -295,6 +245,12 @@ int main(int argc, char *argv[])
         perror("Erreur lors de la fermeture de la socket ");
         exit(EXIT_FAILURE);
     }
+
+    /*
+    for (i = 0; i < 15; ++i) {
+        supprimer_liste_adj(&jeu.liste[i]);
+    }*/
+
     pthread_mutex_destroy(&mutex);
 
     return EXIT_SUCCESS;
