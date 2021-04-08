@@ -130,6 +130,7 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
     unsigned char type;
     long temps = 0;
     char msg[255];
+    int i = 0;
     while (read(fichier, &temps, sizeof(long)) > 0)
     {
         if (read(fichier, &type, sizeof(unsigned char)) < 0)
@@ -137,22 +138,32 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
             perror("ERREUR : Lecture du scénario \n");
             exit(EXIT_FAILURE);
         }
-
-        if (send(cellule->socketClient[3], &type, sizeof(unsigned char), 0) == -1)
+        for (i = 0; i < 4; i++)
         {
-            perror("Erreur lors de l'envoi du message ");
-            exit(EXIT_FAILURE);
-        }
-        if ((int)type == 0) {
-            if (read(fichier, &msg, sizeof(char) * 255) < 0) {
-                perror("ERREUR : Lecture du scénario \n");
-                exit(EXIT_FAILURE);
-            }
-
-            if (send(cellule->socketClient[3], &msg, sizeof(char) * 255, 0) == -1) {
+            if (send(cellule->socketClient[i][0], &type, sizeof(unsigned char), 0) == -1)
+            {
                 perror("Erreur lors de l'envoi du message ");
                 exit(EXIT_FAILURE);
             }
+        }
+
+        if ((int)type == 0)
+        {
+            if (read(fichier, &msg, sizeof(char) * 255) < 0)
+            {
+                perror("ERREUR : Lecture du scénario \n");
+                exit(EXIT_FAILURE);
+            }
+            for (i = 0; i < 4; i++)
+            {
+                if (send(cellule->socketClient[i][0], &msg, sizeof(char) * 255, 0) == -1)
+                {
+                    perror("Erreur lors de l'envoi du message ");
+                    exit(EXIT_FAILURE);
+                }
+            }
+
+            sleep(temps / 1000);
         }
         else
         {
@@ -161,25 +172,58 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
                 perror("ERREUR : Lecture du scénario \n");
                 exit(EXIT_FAILURE);
             }
-
-            if (send(cellule->socketClient[3], &donnees, sizeof(unsigned int), 0) == -1)
+            for (i = 0; i < 4; i++)
             {
-                perror("Erreur lors de l'envoi du message ");
-                exit(EXIT_FAILURE);
+                if (send(cellule->socketClient[i][0], &donnees, sizeof(unsigned int), 0) == -1)
+                {
+                    perror("Erreur lors de l'envoi du message ");
+                    exit(EXIT_FAILURE);
+                }
             }
-        }
-        sleep(temps / 1000);
 
+            sleep(temps / 1000);
+        }
     }
     type = 4;
-    if (send(cellule->socketClient[3], &type, sizeof(unsigned char), 0) == -1)
+    for (i = 0; i < 4; i++)
     {
-        perror("Erreur lors de l'envoi du message ");
-        exit(EXIT_FAILURE);
+        if (send(cellule->socketClient[i][0], &type, sizeof(unsigned char), 0) == -1)
+        {
+            perror("Erreur lors de l'envoi du message ");
+            exit(EXIT_FAILURE);
+        }
     }
 }
+void *thread_send(void *args)
+{
+    arguments_ennemi *arguments = (arguments_ennemi *)args;
+    send_unite unite;
+    int i = 0;
+    printf("\n\n");
+    for (i = 0; i < 3; i++)
+    {
+        printf("Le joueur %d à pour ennemi %d \n", arguments->socket_joueur, arguments->socket_ennemi[i]);
+    }
 
+    while (1)
+    {
+        if (recv(arguments->socket_joueur, &unite, sizeof(send_unite), 0) == -1)
+        {
+            perror("Erreur lors de la lecture de la taille du message ");
+            exit(EXIT_FAILURE);
+        }
 
+        printf("le client socket : %d envoi a  n°%d  l'unite %d \n", arguments->socket_joueur, arguments->socket_ennemi[unite.numero_client - 1], unite.numero_unite);
+
+        if (send(arguments->socket_ennemi[unite.numero_client - 1], &unite, sizeof(send_unite), 0) == -1)
+        {
+            perror("Erreur lors de l'envoi du message ");
+            exit(EXIT_FAILURE);
+        }
+        sleep(1);
+    }
+    pthread_exit(NULL);
+}
 void *thread_partie(void *arg_cellule)
 {
     int cmp = MAX_JOUEURS - 1, fichier;
@@ -187,7 +231,9 @@ void *thread_partie(void *arg_cellule)
     char scenar_nom[MAX_CHAR + 10] = "scenarios/";
     cellule_tcp *cellule = (cellule_tcp *)arg_cellule;
     jeu_t jeu;
-
+    pthread_t thread_j[4];
+    int i = 0, j = 0;
+    arguments_ennemi ennemi[4];
     /* CHARGEMENT DE LA CARTE */
     strcat(map_nom, cellule->map);
     strcat(map_nom, ".bin");
@@ -225,24 +271,48 @@ void *thread_partie(void *arg_cellule)
 
         /* Attente d'une connexion */
         printf("Serveur port = %d : attente de connexion de %d joueurs...\n", ntohs(cellule->adresseServeur.sin_port), cmp + 1);
-        if ((cellule->socketClient[cmp] = accept(cellule->socketServeur, NULL, NULL)) == -1)
+        if ((cellule->socketClient[cmp][0] = accept(cellule->socketServeur, NULL, NULL)) == -1)
         {
             perror("Erreur lors de la demande de connexion ");
             exit(EXIT_FAILURE);
         }
-        /*Envoi du jeu au client*/
-        if (send(cellule->socketClient[cmp], (void *)&jeu, sizeof(jeu_t), 0) == -1)
+        if ((cellule->socketClient[cmp][1] = accept(cellule->socketServeur, NULL, NULL)) == -1)
         {
-            perror("Erreur lors de l'envoi du message ");
+            perror("Erreur lors de la demande de connexion ");
             exit(EXIT_FAILURE);
         }
+
         printf("Envoie de la map au joueur\n");
         printf("places disponibles = %d\n", cellule->place_libre);
         cellule->place_libre--;
         cmp--;
-
-        read_scenar(&jeu, fichier, cellule);
     }
+    ennemi->socket_serveur = cellule->socketServeur;
+    /*Envoi du jeu aux clients*/
+    for (cmp = 0; cmp < MAX_JOUEURS; cmp++)
+    {
+
+        ennemi[cmp].socket_joueur = cellule->socketClient[cmp][1];
+        j = 0;
+        for (i = 0; i < MAX_JOUEURS; i++)
+        {
+            if (ennemi[cmp].socket_joueur != cellule->socketClient[i][1])
+            {
+                ennemi[cmp].socket_ennemi[j] = cellule->socketClient[i][1];
+
+                j++;
+            }
+        }
+
+        if (send(cellule->socketClient[cmp][0], (void *)&jeu, sizeof(jeu_t), 0) == -1)
+        {
+            perror("Erreur lors de l'envoi du message ");
+            exit(EXIT_FAILURE);
+        }
+        pthread_create(&thread_j[cmp], NULL, thread_send, (void *)&ennemi[cmp]);
+    }
+
+    read_scenar(&jeu, fichier, cellule);
     close(fichier);
     supprimer_cellule_tcp(liste_serveurs, cellule);
     printf("Le serveur fils s'éteint\n");

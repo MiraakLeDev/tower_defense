@@ -24,7 +24,7 @@ jeu_t jeu;
 
 typedef struct arguments
 {
-    int num;                /* Utilisé pour le thread scenario pour la socket + thread unite pour le type de l'unite*/
+    int socket; /* Utilisé pour le thread scenario pour la socket + thread unite pour le type de l'unite*/
     interface_t *interface;
 } arguments_t;
 
@@ -35,7 +35,13 @@ typedef struct arguments_unite
     pthread_mutex_t *mutex;
 } arg_unit;
 
+typedef struct arguments_receive
+{
+    int socket_serveur;
+    interface_t *interface;
+    pthread_mutex_t *mutex;
 
+} arg_receive;
 void *spawn_unite(void *args)
 {
     unite_t unite;
@@ -55,7 +61,6 @@ void *spawn_unite(void *args)
     pthread_exit(NULL);
 }
 
-
 void *scenario(void *args)
 {
     unsigned int donnees = 0;
@@ -67,14 +72,14 @@ void *scenario(void *args)
     int i = 0;
     while ((int)type != 4)
     {
-        if (recv(arguments->num, &type, sizeof(unsigned char), 0) == -1)
+        if (recv(arguments->socket, &type, sizeof(unsigned char), 0) == -1)
         {
             perror("Erreur lors de la lecture de la taille du message ");
             exit(EXIT_FAILURE);
         }
         if ((int)type == 0)
         {
-            if (recv(arguments->num, &msg, sizeof(char) * 255, 0) == -1)
+            if (recv(arguments->socket, &msg, sizeof(char) * 255, 0) == -1)
             {
                 perror("Erreur lors de la lecture de la taille du message ");
                 exit(EXIT_FAILURE);
@@ -83,7 +88,7 @@ void *scenario(void *args)
         }
         else
         {
-            if (recv(arguments->num, &donnees, sizeof(unsigned int), 0) == -1)
+            if (recv(arguments->socket, &donnees, sizeof(unsigned int), 0) == -1)
             {
                 perror("Erreur lors de la lecture de la taille du message ");
                 exit(EXIT_FAILURE);
@@ -103,16 +108,39 @@ void *scenario(void *args)
     free(arguments);
     pthread_exit(NULL);
 }
-
+void *recevoir_unite(void *args)
+{
+    arguments_t *arguments = (arguments_t *)args;
+    send_unite unite;
+    unite_t unite_spawn;
+    arg_unit arg_unite;
+    while (1)
+    {
+        if (recv(arguments->socket, &unite, sizeof(send_unite), 0) == -1)
+        {
+            perror("Erreur lors de la lecture du message ");
+            exit(EXIT_FAILURE);
+        }
+        initialiser_unite(&unite_spawn, unite.numero_unite);
+        unite_spawn.position[0] = jeu.spawn[unite.numero_client][0];
+        unite_spawn.position[1] = jeu.spawn[unite.numero_client][1];
+        arg_unite.unite = unite_spawn;
+        arg_unite.interface = arguments->interface;
+        pthread_create(&unite_spawn.thread, NULL, spawn_unite, (void *)&arg_unite);
+    }
+    pthread_exit(NULL);
+}
 int main(int argc, char *argv[])
 {
-    int fd;
+    int socket_serveur, socket_serveur2;
     struct sockaddr_in adresse;
     int ch;
     interface_t interface;
     bool quitter = FALSE;
     pthread_t thread;
-    arguments_t arguments;
+    pthread_t receive;
+    arguments_t arguments_scenario;
+    arguments_t arguments_receive;
     int i = 0;
 
     for (i = 0; i < 15; i++)
@@ -131,7 +159,12 @@ int main(int argc, char *argv[])
     }
 
     /* Création de la socket */
-    if ((fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
+    if ((socket_serveur = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
+    {
+        perror("Erreur lors de la création de la socket ");
+        exit(EXIT_FAILURE);
+    }
+    if ((socket_serveur2 = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
     {
         perror("Erreur lors de la création de la socket ");
         exit(EXIT_FAILURE);
@@ -151,8 +184,14 @@ int main(int argc, char *argv[])
 
     sleep(1);
 
-    /* Connexion au serveur */
-    if (connect(fd, (struct sockaddr *)&adresse, sizeof(adresse)) == -1)
+    /* Connexion au serveur pour la reception du scénario*/
+    if (connect(socket_serveur, (struct sockaddr *)&adresse, sizeof(adresse)) == -1)
+    {
+        perror("Erreur lors de la connexion ");
+        exit(EXIT_FAILURE);
+    }
+    /* Connexion au serveur pour la reception d'unités ennemis*/
+    if (connect(socket_serveur2, (struct sockaddr *)&adresse, sizeof(adresse)) == -1)
     {
         perror("Erreur lors de la connexion ");
         exit(EXIT_FAILURE);
@@ -160,7 +199,7 @@ int main(int argc, char *argv[])
 
     printf("Je suis connecté au serveur TCP\n");
     /*Reception du jeu */
-    if (recv(fd, (jeu_t *)&jeu, sizeof(jeu_t), 0) == -1)
+    if (recv(socket_serveur, (jeu_t *)&jeu, sizeof(jeu_t), 0) == -1)
     {
         perror("Erreur lors de la lecture de la taille du message ");
         exit(EXIT_FAILURE);
@@ -188,13 +227,16 @@ int main(int argc, char *argv[])
                 COLS, LINES, LARGEUR, HAUTEUR);
         exit(EXIT_FAILURE);
     }
-    arguments.num = fd;
-    arguments.interface = &interface;
+    /*Arguments pour le scénario*/
+    arguments_scenario.socket = socket_serveur;
+    arguments_scenario.interface = &interface;
 
+    /*Arguments pour la reception d'ennemi d'un autre adversaire*/
+    arguments_receive.socket = socket_serveur2;
+    arguments_receive.interface = &interface;
     jeu.liste[5] = initialiser_liste_adj();
-    pthread_create(&thread, NULL, &scenario, (void *)&arguments);
-
-
+    pthread_create(&thread, NULL, &scenario, (void *)&arguments_scenario);
+    pthread_create(&receive, NULL, &recevoir_unite, (void *)&arguments_receive);
     while (quitter == FALSE)
     {
         ch = getch();
@@ -203,7 +245,7 @@ int main(int argc, char *argv[])
             quitter = true;
         else
         {
-            interface_main(&interface, &jeu, ch);
+            interface_main(&interface, &jeu, ch, &socket_serveur2);
             wrefresh(interface.infos->interieur);
         }
     }
@@ -215,7 +257,7 @@ int main(int argc, char *argv[])
     ncurses_stopper();
 
     /* Fermeture de la socket */
-    if (close(fd) == -1)
+    if (close(socket_serveur) == -1)
     {
         perror("Erreur lors de la fermeture de la socket ");
         exit(EXIT_FAILURE);

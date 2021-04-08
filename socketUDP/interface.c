@@ -9,6 +9,8 @@
 #include "liste_adj.h"
 #include <pthread.h>
 #include "tour.h"
+#include <sys/socket.h> /* Pour socket */
+#include <arpa/inet.h>
 /**
  * Définition de la palette.
  */
@@ -23,14 +25,13 @@ void palette()
     init_pair(7, COLOR_WHITE, COLOR_BLUE);
 }
 
-
 /**
   * Déplacement d'une unité jusqu'à sa mort.
   * @param unite -> l'unité à déplacer
   * @param interface -> l'interface ncurses
   * @param liste -> la liste d'adjacence de toutes les unités
   */
-void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t* interface)
+void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t *interface)
 {
     /* position initiale coordonnée "x" de l'unité (quand elle arrive dans la fonction) */
     int position_initiale;
@@ -86,10 +87,10 @@ void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t* interface)
     }
 }
 
-void interface_message(interface_t *interface, char* msg)
+void interface_message(interface_t *interface, char *msg)
 {
     pthread_mutex_lock(&interface->mutex);
-    wprintw(interface->infos->interieur,"\n%s",msg);
+    wprintw(interface->infos->interieur, "\n%s", msg);
     wrefresh(interface->infos->interieur);
     pthread_mutex_unlock(&interface->mutex);
 }
@@ -407,8 +408,9 @@ void interface_outils(interface_t *interface, jeu_t *jeu, int posX, int posY)
  * @param posX la position X du clic dans la fenêtre
  * @param posY la position Y du clic dans la fenêtre
  */
-void interface_attaques(interface_t *interface, jeu_t *jeu, int posX, int posY)
+void interface_attaques(interface_t *interface, jeu_t *jeu, int posX, int posY, int *socket_serveur)
 {
+    send_unite unite;
     if ((posX >= 25) && (posX <= 27))
     {
         switch (posY)
@@ -425,6 +427,14 @@ void interface_attaques(interface_t *interface, jeu_t *jeu, int posX, int posY)
                 interface_MAJEtat(interface, jeu);
                 interface_MAJOutils(interface, jeu);
                 wprintw(interface->infos->interieur, "\nEnvoi d'un soldat à l'adversaire %d... pour de faux", (posX - 24));
+                unite.numero_client = posX - 24;
+                unite.numero_unite = 1;
+
+                if (send(*socket_serveur, &unite, sizeof(send_unite), 0) == -1)
+                {
+                    perror("Erreur lors de l'envoi du message ");
+                    exit(EXIT_FAILURE);
+                }
             }
             break;
         case 1:
@@ -439,6 +449,14 @@ void interface_attaques(interface_t *interface, jeu_t *jeu, int posX, int posY)
                 interface_MAJEtat(interface, jeu);
                 interface_MAJOutils(interface, jeu);
                 wprintw(interface->infos->interieur, "\nEnvoi d'un commando à l'adversaire %d... pour de faux", (posX - 24));
+                unite.numero_client = posX - 24;
+                unite.numero_unite = 2;
+
+                if (send(*socket_serveur, &unite, sizeof(send_unite), 0) == -1)
+                {
+                    perror("Erreur lors de l'envoi du message ");
+                    exit(EXIT_FAILURE);
+                }
             }
             break;
         case 2:
@@ -453,6 +471,14 @@ void interface_attaques(interface_t *interface, jeu_t *jeu, int posX, int posY)
                 interface_MAJEtat(interface, jeu);
                 interface_MAJOutils(interface, jeu);
                 wprintw(interface->infos->interieur, "\nEnvoi d'un vehicule blinde à l'adversaire %d... pour de faux", (posX - 24));
+                unite.numero_client = posX - 24;
+                unite.numero_unite = 3;
+
+                if (send(*socket_serveur, &unite, sizeof(send_unite), 0) == -1)
+                {
+                    perror("Erreur lors de l'envoi du message ");
+                    exit(EXIT_FAILURE);
+                }
             }
             break;
         case 3:
@@ -467,6 +493,14 @@ void interface_attaques(interface_t *interface, jeu_t *jeu, int posX, int posY)
                 interface_MAJEtat(interface, jeu);
                 interface_MAJOutils(interface, jeu);
                 wprintw(interface->infos->interieur, "\nEnvoi d'un lance-missiles à l'adversaire %d... pour de faux", (posX - 24));
+                unite.numero_client = posX - 24;
+                unite.numero_unite = 4;
+
+                if (send(*socket_serveur, &unite, sizeof(send_unite), 0) == -1)
+                {
+                    perror("Erreur lors de l'envoi du message ");
+                    exit(EXIT_FAILURE);
+                }
             }
             break;
         case 4:
@@ -481,6 +515,14 @@ void interface_attaques(interface_t *interface, jeu_t *jeu, int posX, int posY)
                 interface_MAJEtat(interface, jeu);
                 interface_MAJOutils(interface, jeu);
                 wprintw(interface->infos->interieur, "\nEnvoi d'un char à l'adversaire %d... pour de faux", (posX - 24));
+                unite.numero_client = posX - 24;
+                unite.numero_unite = 5;
+
+                if (send(*socket_serveur, &unite, sizeof(send_unite), 0) == -1)
+                {
+                    perror("Erreur lors de l'envoi du message ");
+                    exit(EXIT_FAILURE);
+                }
             }
             break;
         case 5:
@@ -656,7 +698,7 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
  * @param jeu les paramètres de la partie
  * @param c la touche pressée
  */
-void interface_main(interface_t *interface, jeu_t *jeu, int c)
+void interface_main(interface_t *interface, jeu_t *jeu, int c, int *socket_serveur)
 {
     int sourisX, sourisY, posX, posY;
 
@@ -670,7 +712,7 @@ void interface_main(interface_t *interface, jeu_t *jeu, int c)
         }
         else if (fenetre_getcoordonnees(interface->attaques, sourisX, sourisY, &posX, &posY))
         {
-            interface_attaques(interface, jeu, posX, posY);
+            interface_attaques(interface, jeu, posX, posY, socket_serveur);
         }
         else if (fenetre_getcoordonnees(interface->carte, sourisX, sourisY, &posX, &posY))
         {

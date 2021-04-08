@@ -16,7 +16,14 @@ typedef struct
     unsigned char spawn[4][2];   /*Position spawns 0 : ordinateur, 1 : Joueur1, 2 : Joueur2, 3 : Joueur3 */
     liste_adj liste[15];
 } jeu_t;
-
+typedef struct
+{
+    int spawn;
+    int unite;
+    int socket_ennemi[3];
+    int socket_joueur;
+    int socket_serveur;
+} arguments_ennemi;
 /* Constantes pour les coûts des unités */
 #define SOLDAT_COUT 100
 #define COMMANDO_COUT 300

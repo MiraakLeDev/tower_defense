@@ -129,7 +129,7 @@ void interface_outils(interface_t *interface, jeu_t *jeu, int posX, int posY);
  * @param posX la position X du clic dans la fenêtre
  * @param posY la position Y du clic dans la fenêtre
  */
-void interface_attaques(interface_t *interface, jeu_t *jeu, int posX, int posY);
+void interface_attaques(interface_t *interface, jeu_t *jeu, int posX, int posY, int *socket_serveur);
 
 /**
  * Gestion des actions dans la fenêtre de la carte.
@@ -146,10 +146,10 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY);
  * @param jeu les paramètres de la partie
  * @param c la touche pressée
  */
-void interface_main(interface_t *interface, jeu_t *jeu, int c);
+void interface_main(interface_t *interface, jeu_t *jeu, int c, int *socket_serveur);
 
 /*Deplacement des unites sur la carte*/
-void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t* interface);
+void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t *interface);
 
-void interface_message(interface_t *interface, char* msg);
+void interface_message(interface_t *interface, char *msg);
 #endif
