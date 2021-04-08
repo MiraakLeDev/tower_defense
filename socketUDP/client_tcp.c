@@ -235,6 +235,7 @@ int main(int argc, char *argv[])
     arguments_receive.socket = socket_serveur2;
     arguments_receive.interface = &interface;
     jeu.liste[5] = initialiser_liste_adj();
+    jeu.liste[1] = initialiser_liste_adj();
     pthread_create(&thread, NULL, &scenario, (void *)&arguments_scenario);
     pthread_create(&receive, NULL, &recevoir_unite, (void *)&arguments_receive);
     while (quitter == FALSE)
