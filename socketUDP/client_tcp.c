@@ -20,15 +20,12 @@
 #include "fenetre.h"
 #include "interface.h"
 
-pthread_mutex_t mutex;
 jeu_t jeu;
 
 typedef struct arguments
 {
     int num;                /* Utilisé pour le thread scenario pour la socket + thread unite pour le type de l'unite*/
     interface_t *interface;
-    int id_joueur;
-    pthread_mutex_t *mutex;
 } arguments_t;
 
 typedef struct arguments_unite
@@ -48,23 +45,10 @@ void *spawn_unite(void *args)
     /* on l'englobe dans une cellule et on l'ajoute à la bonne liste_adj */
     unite = arg_unite->unite;
     unite_c = initialiser_cellule_unite(&unite);
+
     ajouter_cellule_unite(&jeu.liste[unite.position[0]], unite_c);
 
-    /*
-    pthread_mutex_lock(&mutex);
-    wprintw(unite_arg->interface->infos->interieur, "\nUnite Crée %s", unite_arg->liste[unite.position[0]]->premier->unite->nom);
-    wrefresh(unite_arg->interface->infos->interieur);
-    pthread_mutex_unlock(&mutex);
-    */
-
-    deplacement_unite(&unite, &jeu, arg_unite->interface, arg_unite->mutex);
-
-    /*
-    pthread_mutex_lock(&mutex);
-    wprintw(unite_arg->interface->infos->interieur, "\nUnite MORTE");
-    wrefresh(unite_arg->interface->infos->interieur);
-    pthread_mutex_unlock(&mutex);
-    */
+    deplacement_unite(&unite, &jeu, arg_unite->interface);
 
     /* Une fois que l'unité a fini de se deplacer ou qu'elle s'est faite tuer, on la supprime en mémoire */
     supprimer_cellule_unite(&jeu.liste[unite.position[0]], &unite);
@@ -95,10 +79,7 @@ void *scenario(void *args)
                 perror("Erreur lors de la lecture de la taille du message ");
                 exit(EXIT_FAILURE);
             }
-            pthread_mutex_lock(&mutex);
-            wprintw(arguments->interface->infos->interieur, "\nMessage : %s", msg);
-            wrefresh(arguments->interface->infos->interieur);
-            pthread_mutex_unlock(&mutex);
+            interface_message(arguments->interface, msg);
         }
         else
         {
@@ -108,14 +89,13 @@ void *scenario(void *args)
                 exit(EXIT_FAILURE);
             }
 
-            /* Initialise unite */
+            /* Initialise unite (comme ce sont des unités créées par le scénario, on les fait spawn au spawn Ordinateur = 0) */
             initialiser_unite(&unite, donnees);
             unite.position[0] = jeu.spawn[0][0];
             unite.position[1] = jeu.spawn[0][1];
 
             /* prépare les arguments à passer au thread */
             arg_unite.unite = unite;
-            arg_unite.mutex = &mutex;
             arg_unite.interface = arguments->interface;
             pthread_create(&unite.thread, NULL, spawn_unite, (void *)&arg_unite);
         }
@@ -140,11 +120,6 @@ int main(int argc, char *argv[])
         jeu.liste[i] = initialiser_liste_adj();
     }
 
-    if (pthread_mutex_init(&mutex, NULL) != 0)
-    {
-        printf("\n mutex init failed\n");
-        return 1;
-    }
     /* Vérification des arguments */
     if (argc != 2)
     {
@@ -203,7 +178,6 @@ int main(int argc, char *argv[])
     refresh();
     /* Création de l'interface */
     interface = interface_creer(&jeu);
-    jeu.argent = 2000;
     wrefresh(interface.outils->interieur);
     /* Vérification des dimensions du terminal */
     if ((COLS < LARGEUR) || (LINES < HAUTEUR))
@@ -216,9 +190,10 @@ int main(int argc, char *argv[])
     }
     arguments.num = fd;
     arguments.interface = &interface;
-    arguments.id_joueur = 0;
 
+    jeu.liste[5] = initialiser_liste_adj();
     pthread_create(&thread, NULL, &scenario, (void *)&arguments);
+
 
     while (quitter == FALSE)
     {
@@ -250,8 +225,6 @@ int main(int argc, char *argv[])
     for (i = 0; i < 15; ++i) {
         supprimer_liste_adj(&jeu.liste[i]);
     }*/
-
-    pthread_mutex_destroy(&mutex);
 
     return EXIT_SUCCESS;
 }

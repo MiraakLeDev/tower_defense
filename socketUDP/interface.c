@@ -3,6 +3,7 @@
 #include "jeu.h"
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "interface.h"
 #include "liste_adj.h"
@@ -28,13 +29,11 @@ void palette()
   * @param unite -> l'unité à déplacer
   * @param interface -> l'interface ncurses
   * @param liste -> la liste d'adjacence de toutes les unités
-  * @param mutex -> mutex de l'affichage
   */
-void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t* interface, pthread_mutex_t *mutex)
+void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t* interface)
 {
     /* position initiale coordonnée "x" de l'unité (quand elle arrive dans la fonction) */
     int position_initiale;
-    cellule_unite cellule;
     while (unite->vie > 0)
     {
 
@@ -50,7 +49,7 @@ void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t* interface, pthre
             ajouter_cellule_unite(&jeu->liste[unite->position[0]], retirer_cellule(&jeu->liste[position_initiale], unite));
         }
 
-        pthread_mutex_lock(mutex);
+        pthread_mutex_lock(&interface->mutex);
         if (strcmp(unite->nom, "Soldat") == 0)
         {
             mvwprintw(interface->carte->interieur, unite->position[0], unite->position[1], "s");
@@ -76,15 +75,23 @@ void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t* interface, pthre
             mvwprintw(interface->carte->interieur, unite->position[0], unite->position[1], "?");
         }
         wrefresh(interface->carte->interieur);
-        pthread_mutex_unlock(mutex);
+        pthread_mutex_unlock(&interface->mutex);
 
         usleep(unite->vitesse * 1000);
 
-        pthread_mutex_lock(mutex);
+        pthread_mutex_lock(&interface->mutex);
         mvwaddch(interface->carte->interieur, unite->position[0], unite->position[1], ' ' | COLOR_PAIR(COULEUR_CHEMIN));
         wrefresh(interface->carte->interieur);
-        pthread_mutex_unlock(mutex);
+        pthread_mutex_unlock(&interface->mutex);
     }
+}
+
+void interface_message(interface_t *interface, char* msg)
+{
+    pthread_mutex_lock(&interface->mutex);
+    wprintw(interface->infos->interieur,"\n%s",msg);
+    wrefresh(interface->infos->interieur);
+    pthread_mutex_unlock(&interface->mutex);
 }
 
 /**
@@ -96,6 +103,12 @@ interface_t interface_creer(jeu_t *jeu)
 {
     interface_t retour;
     int i, j;
+
+    if (pthread_mutex_init(&retour.mutex, NULL) != 0)
+    {
+        printf("\n mutex init failed\n");
+        exit(EXIT_FAILURE);
+    }
 
     retour.outilsel = OUTIL_NONE;
 
@@ -168,6 +181,7 @@ void interface_supprimer(interface_t *interface)
     fenetre_supprimer(&interface->etat);
     fenetre_supprimer(&interface->carte);
     fenetre_supprimer(&interface->attaques);
+    pthread_mutex_destroy(&interface->mutex);
 }
 
 /**

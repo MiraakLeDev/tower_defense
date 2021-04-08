@@ -70,6 +70,7 @@ typedef struct
     fenetre_t *etat;       /* Fenêtre d'état */
     fenetre_t *attaques;   /* Fenêtre des attaques */
     unsigned int outilsel; /* L'outil sélectionné */
+    pthread_mutex_t mutex; /* le mutex de l'interface */
 } interface_t;
 
 /**
@@ -148,6 +149,7 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY);
 void interface_main(interface_t *interface, jeu_t *jeu, int c);
 
 /*Deplacement des unites sur la carte*/
-void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t* interface, pthread_mutex_t *mutex);
+void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t* interface);
 
+void interface_message(interface_t *interface, char* msg);
 #endif

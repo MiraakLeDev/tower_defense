@@ -24,6 +24,7 @@ void ajouter_cellule_unite(liste_adj *liste, cellule_unite *cellule_u)
     {
         exit(EXIT_FAILURE);
     }
+
     pthread_mutex_lock(&liste->mutex_liste);
     if (liste->premier == NULL)
     {
@@ -155,7 +156,7 @@ cellule_unite *rechercher_cellule(liste_adj *liste, int position)
 
 void supprimer_liste_adj(liste_adj *liste){
     pthread_mutex_lock(&liste->mutex_liste);
-    if (liste != NULL){
+    if (liste->premier != NULL){
         cellule_unite *cellule = liste->premier;
         cellule_unite *tmp;
         while (cellule != NULL)

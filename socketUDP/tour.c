@@ -121,12 +121,14 @@ void *spawn_tour(void *args)
     arg_tour *arg = (arg_tour *)args;
     tour_t tour = *arg->tour;
 
+    /*
     while (1)
     {
         tour_tire(&tour, arg->jeu);
         usleep(tour.vitesse * 1000);
 
     }
+     */
     detruire_tour(arg->tour);
     return NULL;
 }

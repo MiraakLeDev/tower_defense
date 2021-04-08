@@ -65,13 +65,13 @@ int trouver_chemin(unsigned char carte[15][15], unite_t *unite)
         {
             unite->position[0]++;
         }
-        else if (deplacement_gauche(carte, x, y) == 1)
-        {
-            unite->position[1]--;
-        }
         else if (deplacement_droite(carte, x, y) == 1)
         {
             unite->position[1]++;
+        }
+        else if (deplacement_gauche(carte, x, y) == 1)
+        {
+            unite->position[1]--;
         }
         else
         {
@@ -83,37 +83,37 @@ int trouver_chemin(unsigned char carte[15][15], unite_t *unite)
 
 void initialiser_unite(unite_t *unite, int type)
 {
-  switch (type)
-  {
-  case 1:
-    strncpy(unite->nom, "Soldat", 30);
-    unite->cout = SOLDAT_COUT;
-    unite->vie = SOLDAT_VIE;
-    unite->vitesse = SOLDAT_VITESSE;
-    break;
-  case 2:
-    strncpy(unite->nom, "Commando", 30);
-    unite->cout = COMMANDO_COUT;
-    unite->vie = COMMANDO_VIE;
-    unite->vitesse = COMMANDO_VITESSE;
-    break;
-  case 3:
-    strncpy(unite->nom, "Vehicule", 30);
-    unite->cout = VEHICULE_COUT;
-    unite->vie = VEHICULE_VIE;
-    unite->vitesse = VEHICULE_VITESSE;
-    break;
-  case 4:
-    strncpy(unite->nom, "Missile", 30);
-    unite->cout = MISSILE_COUT;
-    unite->vie = MISSILE_VIE;
-    unite->vitesse = MISSILE_VITESSE;
-    break;
-  case 5:
-    strncpy(unite->nom, "Char", 30);
-    unite->cout = CHAR_COUT;
-    unite->vie = CHAR_VIE;
-    unite->vitesse = CHAR_VITESSE;
-    break;
-  }
+    switch (type)
+    {
+        case 1:
+            strncpy(unite->nom, "Soldat", 30);
+            unite->cout = SOLDAT_COUT;
+            unite->vie = SOLDAT_VIE;
+            unite->vitesse = SOLDAT_VITESSE;
+            break;
+        case 2:
+            strncpy(unite->nom, "Commando", 30);
+            unite->cout = COMMANDO_COUT;
+            unite->vie = COMMANDO_VIE;
+            unite->vitesse = COMMANDO_VITESSE;
+            break;
+        case 3:
+            strncpy(unite->nom, "Vehicule", 30);
+            unite->cout = VEHICULE_COUT;
+            unite->vie = VEHICULE_VIE;
+            unite->vitesse = VEHICULE_VITESSE;
+            break;
+        case 4:
+            strncpy(unite->nom, "Missile", 30);
+            unite->cout = MISSILE_COUT;
+            unite->vie = MISSILE_VIE;
+            unite->vitesse = MISSILE_VITESSE;
+            break;
+        case 5:
+            strncpy(unite->nom, "Char", 30);
+            unite->cout = CHAR_COUT;
+            unite->vie = CHAR_VIE;
+            unite->vitesse = CHAR_VITESSE;
+            break;
+    }
 }

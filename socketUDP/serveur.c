@@ -70,7 +70,6 @@ void recup_data(DIR *d, char *nom_dossier, char contenu[][30])
 }
 
 /**** PARTIE SERVEUR TCP ****/
-
 /* Fonction qui remplie la matrice JEU */
 void set_map(jeu_t *jeu, int fichier)
 {
@@ -111,12 +110,6 @@ void set_map(jeu_t *jeu, int fichier)
 void set_scenar(jeu_t *jeu, int fichier)
 {
     size_t taille_texte;
-    /*
-    long type;
-    unsigned int donnees_int;
-    unsigned char donnees_char;
-    char message[255];
-*/
     lseek(fichier, 0, SEEK_SET);
     if (read(fichier, &taille_texte, sizeof(size_t)) < 0)
     {
@@ -130,14 +123,6 @@ void set_scenar(jeu_t *jeu, int fichier)
         exit(EXIT_FAILURE);
     }
     printf("description scenario : %s \n", jeu->description);
-    /*
-    while (read(fichier,&type,sizeof(long)) > 0) {
-        if(read(fichier,jeu->description,taille_texte) < 0){
-            perror("ERREUR : Lecture du scénario \n");
-            exit(EXIT_FAILURE);
-        }
-    }
-    */
 }
 void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
 {
@@ -158,21 +143,16 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
             perror("Erreur lors de l'envoi du message ");
             exit(EXIT_FAILURE);
         }
-        if ((int)type == 0)
-        {
-            if (read(fichier, &msg, sizeof(char) * 255) < 0)
-            {
+        if ((int)type == 0) {
+            if (read(fichier, &msg, sizeof(char) * 255) < 0) {
                 perror("ERREUR : Lecture du scénario \n");
                 exit(EXIT_FAILURE);
             }
 
-            if (send(cellule->socketClient[3], &msg, sizeof(char) * 255, 0) == -1)
-            {
+            if (send(cellule->socketClient[3], &msg, sizeof(char) * 255, 0) == -1) {
                 perror("Erreur lors de l'envoi du message ");
                 exit(EXIT_FAILURE);
             }
-
-            sleep(temps / 1000);
         }
         else
         {
@@ -187,9 +167,9 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
                 perror("Erreur lors de l'envoi du message ");
                 exit(EXIT_FAILURE);
             }
-
-            sleep(temps / 1000);
         }
+        sleep(temps / 1000);
+
     }
     type = 4;
     if (send(cellule->socketClient[3], &type, sizeof(unsigned char), 0) == -1)
@@ -198,6 +178,8 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
         exit(EXIT_FAILURE);
     }
 }
+
+
 void *thread_partie(void *arg_cellule)
 {
     int cmp = MAX_JOUEURS - 1, fichier;
@@ -225,6 +207,7 @@ void *thread_partie(void *arg_cellule)
     }
     set_scenar(&jeu, fichier);
     jeu.vies = 10;
+    jeu.argent = 2000;
     jeu.adv[0] = 10;
     jeu.adv[1] = 10;
     jeu.adv[2] = 10;
