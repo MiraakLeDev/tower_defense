@@ -3,18 +3,21 @@
 #include <pthread.h>
 typedef struct
 {
-    char nom[30];
+    char nom[30];              /* Nom de l'unité */
     unsigned char position[2]; /* Position de l'unite */
     unsigned int cout;         /* Cout de l'unite */
     unsigned int vie;          /* Vie de l'unite */
     unsigned int vitesse;      /* Vitesse de l'unite */
     pthread_t thread;          /* Thread qui gere l'unité */
 } unite_t;
+
+/* structure utilisée pour envoyer une unité à un autre client */
 typedef struct send_unite
 {
     int numero_unite;
     int numero_client;
 } send_unite;
+
 void *spawn_unite(void *args);
 void initialiser_unite(unite_t *unite, int type);
 int deplacement_haut(unsigned char carte[15][15], int x, int y);

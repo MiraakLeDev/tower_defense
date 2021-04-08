@@ -128,10 +128,7 @@ cellule_unite *rechercher_cellule(liste_adj *liste, int position)
     pthread_mutex_lock(&liste->mutex_liste);
     if (liste->premier != NULL){
         cellule_unite *cellule = liste->premier;
-        printf("uc = %u  int = %u",cellule->unite->position[1], (unsigned char)position);
-
         if (cellule->unite->position[1] == (unsigned char)position) {
-            printf("tata");
             pthread_mutex_unlock(&liste->mutex_liste);
             return cellule;
         }
@@ -140,7 +137,6 @@ cellule_unite *rechercher_cellule(liste_adj *liste, int position)
         {
             if (cellule->unite->position[1] == (unsigned char)position)
             {
-                printf("toto");
                 pthread_mutex_unlock(&liste->mutex_liste);
                 return cellule;
             }

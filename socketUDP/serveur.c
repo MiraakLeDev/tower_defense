@@ -1,18 +1,13 @@
-/**
- * Ce programme se met en attente d'un message de la part d'un client, via une
- * socket UDP. Ce programme s'arrête dès la réception du message.
- * @author Cyril Rabat
- **/
-#include <stdlib.h> /* Pour exit, EXIT_FAILURE, EXIT_SUCCESS */
-#include <stdio.h>  /* Pour printf, fprintf, perror */
+#include <stdlib.h>     /* Pour exit, EXIT_FAILURE, EXIT_SUCCESS */
+#include <stdio.h>      /* Pour printf, fprintf, perror */
 #include <signal.h>
 #include <sys/socket.h> /* Pour socket, bind */
 #include <arpa/inet.h>  /* Pour sockaddr_in */
 #include <string.h>     /* Pour memset */
 #include <unistd.h>     /* Pour close */
 #include <fcntl.h>
-#include <errno.h>  /* Pour errno */
-#include <dirent.h> /* Pour parcourir les dossiers */
+#include <errno.h>      /* Pour errno */
+#include <dirent.h>     /* Pour parcourir les dossiers */
 #include <sys/wait.h>
 #include <time.h>
 #include <pthread.h>
@@ -34,7 +29,7 @@ void handler(int signum)
     }
 }
 
-/**** Permet de récupérer le contenu d'un dossier ****/
+/* Permet de récupérer le contenu d'un dossier */
 void recup_data(DIR *d, char *nom_dossier, char contenu[][30])
 {
     int i = 0;
@@ -70,66 +65,13 @@ void recup_data(DIR *d, char *nom_dossier, char contenu[][30])
 }
 
 /**** PARTIE SERVEUR TCP ****/
-/* Fonction qui remplie la matrice JEU */
-void set_map(jeu_t *jeu, int fichier)
-{
-    size_t taille_texte;
-    unsigned char case_terrain;
-    int i = 0, j = 0;
-
-    lseek(fichier, 0, SEEK_SET);
-    if (read(fichier, &taille_texte, sizeof(size_t)) < 0)
-    {
-        perror("ERREUR : Lecture de la map \n");
-        exit(EXIT_FAILURE);
-    }
-
-    lseek(fichier, taille_texte, SEEK_CUR);
-    while (read(fichier, &case_terrain, sizeof(unsigned char)) > 0)
-    {
-        if (j == 15)
-        {
-            j = 0;
-            i++;
-        }
-        if (case_terrain >= 1 && case_terrain <= 3)
-        {
-            jeu->spawn[case_terrain][0] = i;
-            jeu->spawn[case_terrain][1] = j;
-        }
-        else if (case_terrain == 254)
-        {
-            jeu->spawn[0][0] = i;
-            jeu->spawn[0][1] = j;
-        }
-        jeu->carte[i][j] = case_terrain;
-        j++;
-    }
-}
-
-void set_scenar(jeu_t *jeu, int fichier)
-{
-    size_t taille_texte;
-    lseek(fichier, 0, SEEK_SET);
-    if (read(fichier, &taille_texte, sizeof(size_t)) < 0)
-    {
-        perror("ERREUR : Lecture du scénario \n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (read(fichier, jeu->description, taille_texte) < 0)
-    {
-        perror("ERREUR : Lecture du scénario \n");
-        exit(EXIT_FAILURE);
-    }
-    printf("description scenario : %s \n", jeu->description);
-}
+/* Fonction qui le scénario contenu dans fichier */
 void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
 {
-    unsigned int donnees = 0;
-    unsigned char type;
-    long temps = 0;
-    char msg[255];
+    unsigned int donnees = 0;   /* les données de l'évenement */
+    unsigned char type;         /* type d'evenement */
+    long temps = 0;             /* temps en millisecondes */
+    char msg[255];              /* message lors d'évenements */
     int i = 0;
     while (read(fichier, &temps, sizeof(long)) > 0)
     {
@@ -138,7 +80,7 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
             perror("ERREUR : Lecture du scénario \n");
             exit(EXIT_FAILURE);
         }
-        for (i = 0; i < 4; i++)
+        for (i = 0; i < MAX_JOUEURS; i++)
         {
             if (send(cellule->socketClient[i][0], &type, sizeof(unsigned char), 0) == -1)
             {
@@ -154,7 +96,7 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
                 perror("ERREUR : Lecture du scénario \n");
                 exit(EXIT_FAILURE);
             }
-            for (i = 0; i < 4; i++)
+            for (i = 0; i < MAX_JOUEURS; i++)
             {
                 if (send(cellule->socketClient[i][0], &msg, sizeof(char) * 255, 0) == -1)
                 {
@@ -162,8 +104,6 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
                     exit(EXIT_FAILURE);
                 }
             }
-
-            sleep(temps / 1000);
         }
         else
         {
@@ -172,7 +112,7 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
                 perror("ERREUR : Lecture du scénario \n");
                 exit(EXIT_FAILURE);
             }
-            for (i = 0; i < 4; i++)
+            for (i = 0; i < MAX_JOUEURS; i++)
             {
                 if (send(cellule->socketClient[i][0], &donnees, sizeof(unsigned int), 0) == -1)
                 {
@@ -180,12 +120,13 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
                     exit(EXIT_FAILURE);
                 }
             }
-
-            sleep(temps / 1000);
         }
+        sleep(temps / 1000);
     }
+
+    /* une fois le scénario fini on le signal au client */
     type = 4;
-    for (i = 0; i < 4; i++)
+    for (i = 0; i < MAX_JOUEURS; i++)
     {
         if (send(cellule->socketClient[i][0], &type, sizeof(unsigned char), 0) == -1)
         {
@@ -194,26 +135,20 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
         }
     }
 }
+
+/* thread qui gère le relai d'unités entre deux joueurs */
 void *thread_send(void *args)
 {
     arguments_ennemi *arguments = (arguments_ennemi *)args;
     send_unite unite;
-    int i = 0;
-    printf("\n\n");
-    for (i = 0; i < 3; i++)
-    {
-        printf("Le joueur %d à pour ennemi %d \n", arguments->socket_joueur, arguments->socket_ennemi[i]);
-    }
-
     while (1)
     {
+        /* si on reçoit un envoi d'unité on la transfert au joueur visé */
         if (recv(arguments->socket_joueur, &unite, sizeof(send_unite), 0) == -1)
         {
             perror("Erreur lors de la lecture de la taille du message ");
             exit(EXIT_FAILURE);
         }
-
-        printf("le client socket : %d envoi a  n°%d  l'unite %d \n", arguments->socket_joueur, arguments->socket_ennemi[unite.numero_client - 1], unite.numero_unite);
 
         if (send(arguments->socket_ennemi[unite.numero_client - 1], &unite, sizeof(send_unite), 0) == -1)
         {
@@ -224,16 +159,20 @@ void *thread_send(void *args)
     }
     pthread_exit(NULL);
 }
+
 void *thread_partie(void *arg_cellule)
 {
-    int cmp = MAX_JOUEURS - 1, fichier;
+    int cmp = MAX_JOUEURS - 1, fichier;         /* cmp compte le nombre de joueurs connectés */
     char map_nom[MAX_CHAR + 7] = "cartes/";
     char scenar_nom[MAX_CHAR + 10] = "scenarios/";
     cellule_tcp *cellule = (cellule_tcp *)arg_cellule;
     jeu_t jeu;
-    pthread_t thread_j[4];
+    pthread_t thread_j[MAX_JOUEURS];
     int i = 0, j = 0;
-    arguments_ennemi ennemi[4];
+    arguments_ennemi ennemi[MAX_JOUEURS];
+
+    jeu = initialiser_jeu();
+
     /* CHARGEMENT DE LA CARTE */
     strcat(map_nom, cellule->map);
     strcat(map_nom, ".bin");
@@ -243,6 +182,8 @@ void *thread_partie(void *arg_cellule)
         exit(EXIT_FAILURE);
     }
     set_map(&jeu, fichier);
+    close(fichier);
+
     /* CHARGEMENT DU SCENARIO */
     strcat(scenar_nom, cellule->scenar);
     strcat(scenar_nom, ".bin");
@@ -252,11 +193,6 @@ void *thread_partie(void *arg_cellule)
         exit(EXIT_FAILURE);
     }
     set_scenar(&jeu, fichier);
-    jeu.vies = 10;
-    jeu.argent = 2000;
-    jeu.adv[0] = 10;
-    jeu.adv[1] = 10;
-    jeu.adv[2] = 10;
 
     /* On attend la connexion des quatres joueurs avant de commencer la partie */
     while (cmp >= 0)
@@ -269,7 +205,7 @@ void *thread_partie(void *arg_cellule)
             exit(EXIT_FAILURE);
         }
 
-        /* Attente d'une connexion */
+        /* Attente de deux connexions (1ere connexion = socket d'envoi du scénario | 2e connexion = socket permettant de faire communiquer les adversaires)*/
         printf("Serveur port = %d : attente de connexion de %d joueurs...\n", ntohs(cellule->adresseServeur.sin_port), cmp + 1);
         if ((cellule->socketClient[cmp][0] = accept(cellule->socketServeur, NULL, NULL)) == -1)
         {
@@ -282,16 +218,14 @@ void *thread_partie(void *arg_cellule)
             exit(EXIT_FAILURE);
         }
 
-        printf("Envoie de la map au joueur\n");
-        printf("places disponibles = %d\n", cellule->place_libre);
         cellule->place_libre--;
         cmp--;
     }
     ennemi->socket_serveur = cellule->socketServeur;
+
     /*Envoi du jeu aux clients*/
     for (cmp = 0; cmp < MAX_JOUEURS; cmp++)
     {
-
         ennemi[cmp].socket_joueur = cellule->socketClient[cmp][1];
         j = 0;
         for (i = 0; i < MAX_JOUEURS; i++)
@@ -299,7 +233,6 @@ void *thread_partie(void *arg_cellule)
             if (ennemi[cmp].socket_joueur != cellule->socketClient[i][1])
             {
                 ennemi[cmp].socket_ennemi[j] = cellule->socketClient[i][1];
-
                 j++;
             }
         }
@@ -316,7 +249,6 @@ void *thread_partie(void *arg_cellule)
     close(fichier);
     supprimer_cellule_tcp(liste_serveurs, cellule);
     printf("Le serveur fils s'éteint\n");
-
     pthread_exit(NULL);
 }
 
@@ -535,5 +467,8 @@ int main(int argc, char *argv[])
 
     printf("Serveur terminé.\n");
 
+    if (d!=NULL){
+        free(d);
+    }
     return EXIT_SUCCESS;
 }

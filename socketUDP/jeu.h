@@ -16,14 +16,21 @@ typedef struct
     unsigned char spawn[4][2];   /*Position spawns 0 : ordinateur, 1 : Joueur1, 2 : Joueur2, 3 : Joueur3 */
     liste_adj liste[15];
 } jeu_t;
+
+
 typedef struct
 {
-    int spawn;
-    int unite;
-    int socket_ennemi[3];
-    int socket_joueur;
-    int socket_serveur;
+    int spawn;              /*Position spawns 0 : ordinateur, 1 : Joueur1, 2 : Joueur2, 3 : Joueur3 */
+    int unite;              /* identifiant de l'unite (soldat, char, ...) */
+    int socket_ennemi[3];   /* la socket de chaque ennemi sur laquelle on va envoyer les unités */
+    int socket_joueur;      /* la socket du joueur en cours */
+    int socket_serveur;     /* la socket du serveur TCP qui gère la partie */
 } arguments_ennemi;
+
+jeu_t initialiser_jeu();
+void set_scenar(jeu_t *jeu, int fichier);
+void set_map(jeu_t *jeu, int fichier);
+
 /* Constantes pour les coûts des unités */
 #define SOLDAT_COUT 100
 #define COMMANDO_COUT 300

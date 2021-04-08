@@ -1,8 +1,3 @@
-/**
- * Ce programme permet d'envoyer un message au serveur via une socket UDP.
- * L'adresse IP et le port du serveur sont passés en argument du programme.
- * @author Cyril Rabat
- **/
 #include <stdlib.h>      /* Pour exit, EXIT_FAILURE, EXIT_SUCCESS */
 #include <stdio.h>       /* Pour printf, fprintf, perror */
 #include <sys/socket.h>  /* Pour socket */
@@ -50,6 +45,7 @@ int main(int argc, char *argv[]) {
     }
 
     action = atoi(argv[3]);
+    /* En fonction de ce que veut le client, on execute diverses actions */
     switch (action) {
         /* DEMANDE DE CARTES */
         case 1:
@@ -116,18 +112,20 @@ int main(int argc, char *argv[]) {
                     }
                 } while (choix_serveur != 'O' && choix_serveur != 'N');
 
-                printf("Entrez une l'adresse du serveur (Ex: 127.0.0.1) : \n");
-                if (scanf("%16s",adresse_tcp) == -1){
-                    perror("ERREUR : IP du serveur");
-                    exit(EXIT_FAILURE);
-                }
+                if (choix_serveur == 'O') {
+                    printf("Entrez une l'adresse du serveur (Ex: 127.0.0.1) : \n");
+                    if (scanf("%16s", adresse_tcp) == -1) {
+                        perror("ERREUR : IP du serveur");
+                        exit(EXIT_FAILURE);
+                    }
 
-                printf("Entrez une le port du serveur (Ex: 2001) : \n");
-                if (scanf("%6s",port_tcp) == -1){
-                    perror("ERREUR : Port du serveur");
-                    exit(EXIT_FAILURE);
+                    printf("Entrez une le port du serveur (Ex: 2001) : \n");
+                    if (scanf("%6s", port_tcp) == -1) {
+                        perror("ERREUR : Port du serveur");
+                        exit(EXIT_FAILURE);
+                    }
+                    execl("./client_tcp", adresse_tcp, port_tcp, NULL);
                 }
-                printf("execl = %d", execl("./client_tcp", adresse_tcp, port_tcp, NULL));
             }
             break;
 
@@ -202,7 +200,7 @@ int main(int argc, char *argv[]) {
                 exit(EXIT_FAILURE);
             }
             sprintf(port_tcp, "%d" ,reponse_serveur.port); /* conversion port int en string */
-            printf("execl = %d", execl("./client_tcp", reponse_serveur.adresse, port_tcp, NULL));
+            execl("./client_tcp", reponse_serveur.adresse, port_tcp, NULL);
             break;
     }
     return EXIT_SUCCESS;

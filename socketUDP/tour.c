@@ -108,10 +108,10 @@ void tour_tire(tour_t *tour,jeu_t * jeu)
     for (i = 0; i < tour->taille_chemin; i++)
     {
         afficher_liste_adj(&jeu->liste[tour->chemin[i][0]]);
-        /*
-         if (rechercher_cellule(&liste[tour->chemin[i][0]], tour->chemin[i][1]) != NULL){
+
+         if (rechercher_cellule(&jeu->liste[tour->chemin[i][0]], tour->chemin[i][1]) != NULL){
             printf("trouvé !");
-        }*/
+        }
     }
 }
 
@@ -121,28 +121,22 @@ void *spawn_tour(void *args)
     arg_tour *arg = (arg_tour *)args;
     tour_t tour = *arg->tour;
 
-    /*
-    while (1)
+    while (arg->jeu->vies > 0)
     {
         tour_tire(&tour, arg->jeu);
         usleep(tour.vitesse * 1000);
-
     }
-     */
     detruire_tour(arg->tour);
     return NULL;
 }
 
 /* Desallocation mémoire d'une tour */
 void detruire_tour(tour_t* tour){
-    printf("salut frero");
-    /*
     int i = 0;
     for (i = 0; i < tour->taille_chemin; ++i) {
         if (tour->chemin[i] != NULL)
             free(tour->chemin[i]);
     }
-     */
 }
 
 

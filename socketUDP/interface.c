@@ -37,10 +37,11 @@ void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t *interface)
     int position_initiale;
     while (unite->vie > 0)
     {
-
         position_initiale = unite->position[0];
         if (trouver_chemin(jeu->carte, unite) == 1)
         {
+            jeu->vies--;
+            interface_MAJEtat(interface, jeu);
             break;
         }
 
@@ -583,7 +584,6 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
         if ((jeu->carte[posY][posX] == CASE_VIDE) && (jeu->argent >= TOUR_1_COUT))
         {
             jeu->argent -= TOUR_1_COUT;
-            wprintw(interface->infos->interieur, "\nTour 1 [%d][%d]", posY, posX);
             mvwprintw(interface->carte->interieur, posY, posX, "A");
             initialiser_tour(&tour, 1, jeu, posY, posX);
             arg_tour.tour = &tour;
@@ -602,7 +602,6 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
         if ((jeu->carte[posY][posX] == CASE_VIDE) && (jeu->argent >= TOUR_2_COUT))
         {
             jeu->argent -= TOUR_2_COUT;
-            wprintw(interface->infos->interieur, "\nTour 2 posee !");
             mvwprintw(interface->carte->interieur, posY, posX, "B");
             initialiser_tour(&tour, 2, jeu, posY, posX);
             arg_tour.tour = &tour;
@@ -621,7 +620,6 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
         if ((jeu->carte[posY][posX] == CASE_VIDE) && (jeu->argent >= TOUR_3_COUT))
         {
             jeu->argent -= TOUR_3_COUT;
-            wprintw(interface->infos->interieur, "\nTour 3 posee !");
             mvwprintw(interface->carte->interieur, posY, posX, "C");
             initialiser_tour(&tour, 3, jeu, posY, posX);
             arg_tour.tour = &tour;
@@ -640,7 +638,6 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
         if ((jeu->carte[posY][posX] == CASE_VIDE) && (jeu->argent >= TOUR_4_COUT))
         {
             jeu->argent -= TOUR_4_COUT;
-            wprintw(interface->infos->interieur, "\nTour 4 posee !");
             mvwprintw(interface->carte->interieur, posY, posX, "D");
             initialiser_tour(&tour, 4, jeu, posY, posX);
             arg_tour.tour = &tour;
@@ -659,12 +656,11 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
         if ((jeu->carte[posY][posX] == CASE_VIDE) && (jeu->argent >= TOUR_5_COUT))
         {
             jeu->argent -= TOUR_5_COUT;
-            wprintw(interface->infos->interieur, "\nTour 5 posee !");
             mvwprintw(interface->carte->interieur, posY, posX, "E");
             initialiser_tour(&tour, 5, jeu, posY, posX);
             arg_tour.tour = &tour;
             arg_tour.jeu = jeu;
-            /*pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour);*/
+            pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour);
             interface_MAJOutils(interface, jeu);
             interface_MAJEtat(interface, jeu);
             interface_MAJAttaques(interface, jeu);

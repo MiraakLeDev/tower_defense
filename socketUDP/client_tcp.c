@@ -1,10 +1,3 @@
-/**
- * Ce programme permet d'envoyer un message au serveur via une socket TCP.
- * Le message, passé en argument du programme, est envoyé en deux temps :
- * sa taille, puis le contenu du message. L'adresse IP et le port du serveur
- * sont passés en arguments du programme.
- * @author Cyril Rabat
- **/
 #include <stdlib.h>     /* Pour exit, EXIT_SUCCESS, EXIT_FAILURE */
 #include <sys/socket.h> /* Pour socket */
 #include <arpa/inet.h>  /* Pour IPPROTO_TCP */
@@ -24,7 +17,7 @@ jeu_t jeu;
 
 typedef struct arguments
 {
-    int socket; /* Utilisé pour le thread scenario pour la socket + thread unite pour le type de l'unite*/
+    int socket;
     interface_t *interface;
 } arguments_t;
 
@@ -32,16 +25,9 @@ typedef struct arguments_unite
 {
     unite_t unite;
     interface_t *interface;
-    pthread_mutex_t *mutex;
 } arg_unit;
 
-typedef struct arguments_receive
-{
-    int socket_serveur;
-    interface_t *interface;
-    pthread_mutex_t *mutex;
-
-} arg_receive;
+/* thread qui fait spawn et déplacer une unité jusqu'à sa mort */
 void *spawn_unite(void *args)
 {
     unite_t unite;
@@ -51,7 +37,6 @@ void *spawn_unite(void *args)
     /* on l'englobe dans une cellule et on l'ajoute à la bonne liste_adj */
     unite = arg_unite->unite;
     unite_c = initialiser_cellule_unite(&unite);
-
     ajouter_cellule_unite(&jeu.liste[unite.position[0]], unite_c);
 
     deplacement_unite(&unite, &jeu, arg_unite->interface);
@@ -61,16 +46,17 @@ void *spawn_unite(void *args)
     pthread_exit(NULL);
 }
 
+/* thread qui lit le scénario reçu ligne par ligne et qui exécute les événements */
 void *scenario(void *args)
 {
-    unsigned int donnees = 0;
-    unsigned char type = 0;
-    char msg[255];
+    unsigned int donnees = 0;   /* les données de l'évenement */
+    unsigned char type = 0;     /* type d'evenement */
+    char msg[255];              /* message lors d'évenements */
     arguments_t *arguments = (arguments_t *)args;
     arg_unit arg_unite;
     unite_t unite;
     int i = 0;
-    while ((int)type != 4)
+    while ((int)type != 4 || jeu.vies > 0)
     {
         if (recv(arguments->socket, &type, sizeof(unsigned char), 0) == -1)
         {
@@ -79,7 +65,7 @@ void *scenario(void *args)
         }
         if ((int)type == 0)
         {
-            if (recv(arguments->socket, &msg, sizeof(char) * 255, 0) == -1)
+            if (recv(arguments->socket, &msg, sizeof(msg), 0) == -1)
             {
                 perror("Erreur lors de la lecture de la taille du message ");
                 exit(EXIT_FAILURE);
@@ -114,7 +100,7 @@ void *recevoir_unite(void *args)
     send_unite unite;
     unite_t unite_spawn;
     arg_unit arg_unite;
-    while (1)
+    while (jeu.vies > 0)
     {
         if (recv(arguments->socket, &unite, sizeof(send_unite), 0) == -1)
         {
@@ -130,6 +116,8 @@ void *recevoir_unite(void *args)
     }
     pthread_exit(NULL);
 }
+
+
 int main(int argc, char *argv[])
 {
     int socket_serveur, socket_serveur2;
@@ -142,11 +130,6 @@ int main(int argc, char *argv[])
     arguments_t arguments_scenario;
     arguments_t arguments_receive;
     int i = 0;
-
-    for (i = 0; i < 15; i++)
-    {
-        jeu.liste[i] = initialiser_liste_adj();
-    }
 
     /* Vérification des arguments */
     if (argc != 2)
@@ -169,8 +152,6 @@ int main(int argc, char *argv[])
         perror("Erreur lors de la création de la socket ");
         exit(EXIT_FAILURE);
     }
-
-    printf("addr : %s port : %s", argv[0], argv[1]);
 
     /* Remplissage de la structure */
     memset(&adresse, 0, sizeof(struct sockaddr_in));
@@ -197,12 +178,18 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    printf("Je suis connecté au serveur TCP\n");
+    printf("Je suis connecté au serveur TCP : %s:%s\n", argv[0], argv[1]);
+
     /*Reception du jeu */
     if (recv(socket_serveur, (jeu_t *)&jeu, sizeof(jeu_t), 0) == -1)
     {
         perror("Erreur lors de la lecture de la taille du message ");
         exit(EXIT_FAILURE);
+    }
+
+    for (i = 0; i < 15; i++)
+    {
+        jeu.liste[i] = initialiser_liste_adj();
     }
 
     printf("Récupération de la map\n");
@@ -215,9 +202,11 @@ int main(int argc, char *argv[])
     palette();
     clear();
     refresh();
+
     /* Création de l'interface */
     interface = interface_creer(&jeu);
     wrefresh(interface.outils->interieur);
+
     /* Vérification des dimensions du terminal */
     if ((COLS < LARGEUR) || (LINES < HAUTEUR))
     {
@@ -234,8 +223,7 @@ int main(int argc, char *argv[])
     /*Arguments pour la reception d'ennemi d'un autre adversaire*/
     arguments_receive.socket = socket_serveur2;
     arguments_receive.interface = &interface;
-    jeu.liste[5] = initialiser_liste_adj();
-    jeu.liste[1] = initialiser_liste_adj();
+
     pthread_create(&thread, NULL, &scenario, (void *)&arguments_scenario);
     pthread_create(&receive, NULL, &recevoir_unite, (void *)&arguments_receive);
     while (quitter == FALSE)
@@ -257,17 +245,18 @@ int main(int argc, char *argv[])
     /* Arrêt de ncurses */
     ncurses_stopper();
 
-    /* Fermeture de la socket */
+    /* Fermeture de la socket
     if (close(socket_serveur) == -1)
     {
         perror("Erreur lors de la fermeture de la socket ");
         exit(EXIT_FAILURE);
-    }
+    }*/
 
-    /*
     for (i = 0; i < 15; ++i) {
         supprimer_liste_adj(&jeu.liste[i]);
-    }*/
+    }
+
+    printf("Vous avez perdu !\n");
 
     return EXIT_SUCCESS;
 }
