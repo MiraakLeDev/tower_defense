@@ -1,13 +1,13 @@
-#include <stdlib.h>     /* Pour exit, EXIT_FAILURE, EXIT_SUCCESS */
-#include <stdio.h>      /* Pour printf, fprintf, perror */
+#include <stdlib.h> /* Pour exit, EXIT_FAILURE, EXIT_SUCCESS */
+#include <stdio.h>  /* Pour printf, fprintf, perror */
 #include <signal.h>
 #include <sys/socket.h> /* Pour socket, bind */
 #include <arpa/inet.h>  /* Pour sockaddr_in */
 #include <string.h>     /* Pour memset */
 #include <unistd.h>     /* Pour close */
 #include <fcntl.h>
-#include <errno.h>      /* Pour errno */
-#include <dirent.h>     /* Pour parcourir les dossiers */
+#include <errno.h>  /* Pour errno */
+#include <dirent.h> /* Pour parcourir les dossiers */
 #include <sys/wait.h>
 #include <time.h>
 #include <pthread.h>
@@ -68,10 +68,10 @@ void recup_data(DIR *d, char *nom_dossier, char contenu[][30])
 /* Fonction qui le scénario contenu dans fichier */
 void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
 {
-    unsigned int donnees = 0;   /* les données de l'évenement */
-    unsigned char type;         /* type d'evenement */
-    long temps = 0;             /* temps en millisecondes */
-    char msg[255];              /* message lors d'évenements */
+    unsigned int donnees = 0; /* les données de l'évenement */
+    unsigned char type;       /* type d'evenement */
+    long temps = 0;           /* temps en millisecondes */
+    char msg[255];            /* message lors d'évenements */
     int i = 0;
     while (read(fichier, &temps, sizeof(long)) > 0)
     {
@@ -162,15 +162,15 @@ void *thread_send(void *args)
 
 void *thread_partie(void *arg_cellule)
 {
-    int cmp = MAX_JOUEURS - 1, fichier;         /* cmp compte le nombre de joueurs connectés */
+    int cmp = MAX_JOUEURS - 1, fichier; /* cmp compte le nombre de joueurs connectés */
     char map_nom[MAX_CHAR + 7] = "cartes/";
     char scenar_nom[MAX_CHAR + 10] = "scenarios/";
     cellule_tcp *cellule = (cellule_tcp *)arg_cellule;
     jeu_t jeu;
-    pthread_t thread_j[MAX_JOUEURS];            /* Un thread par joueur est dédié à écouter et relayer des unités entre les joueurs */
+    pthread_t thread_j[MAX_JOUEURS]; /* Un thread par joueur est dédié à écouter et relayer des unités entre les joueurs */
     arguments_ennemi ennemi[MAX_JOUEURS];
     int i = 0, j = 0;
-
+    int pret;
     jeu = initialiser_jeu();
 
     /* CHARGEMENT DE LA CARTE */
@@ -243,7 +243,27 @@ void *thread_partie(void *arg_cellule)
         }
         pthread_create(&thread_j[cmp], NULL, thread_send, (void *)&ennemi[cmp]);
     }
-    read_scenar(&jeu, fichier, cellule);
+
+    /*On attend que tous les clients soient pret*/
+    for (i = 0; i < MAX_JOUEURS; i++)
+    {
+        if (recv(cellule->socketClient[i][0], &pret, sizeof(int), 0) == -1)
+        {
+            perror("Erreur lors de reception du message");
+            exit(EXIT_FAILURE);
+        }
+    }
+    pret = 20;
+    /*On envoie aux clients que la partie peut commencer*/
+    for (i = 0; i < MAX_JOUEURS; i++)
+    {
+        if (send(cellule->socketClient[i][0], &pret, sizeof(int), 0) == -1)
+        {
+            perror("Erreur lors de l'envoi du message ");
+            exit(EXIT_FAILURE);
+        }
+    }
+    read_scenar(&jeu, fichier, cellule); /*on envoie le scénario*/
     close(fichier);
     supprimer_cellule_tcp(liste_serveurs, cellule);
     printf("Le serveur fils s'éteint\n");
@@ -465,7 +485,8 @@ int main(int argc, char *argv[])
 
     printf("Serveur terminé.\n");
 
-    if (d!=NULL){
+    if (d != NULL)
+    {
         free(d);
     }
     return EXIT_SUCCESS;

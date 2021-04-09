@@ -49,9 +49,9 @@ void *spawn_unite(void *args)
 /* thread qui lit le scénario reçu ligne par ligne et qui exécute les événements */
 void *scenario(void *args)
 {
-    unsigned int donnees = 0;   /* les données de l'évenement */
-    unsigned char type = 0;     /* type d'evenement */
-    char msg[255];              /* message lors d'évenements */
+    unsigned int donnees = 0; /* les données de l'évenement */
+    unsigned char type = 0;   /* type d'evenement */
+    char msg[255];            /* message lors d'évenements */
     arguments_t *arguments = (arguments_t *)args;
     arg_unit arg_unite;
     unite_t unite;
@@ -119,7 +119,6 @@ void *recevoir_unite(void *args)
     }
     pthread_exit(NULL);
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -223,7 +222,33 @@ int main(int argc, char *argv[])
     /*Arguments pour la reception d'ennemi d'un autre adversaire*/
     arguments_receive.socket = socket_serveur2;
     arguments_receive.interface = &interface;
+    /*Le joueur doit se mettre pret pour que la partie puisse commencer*/
+    interface_main(&interface, &jeu, ch, &socket_serveur2);
+    wprintw(interface.infos->interieur, "\nAppuiez sur la touche Entrer pour vous mettre pret");
+    wrefresh(interface.infos->interieur);
+    while (quitter == FALSE)
+    {
+        ch = getch();
 
+        if ((ch == 10)) /*Envoi au serveur que le joueur est pret a commencer la partie*/
+        {
+            if (send(socket_serveur, &i, sizeof(int), 0) == -1)
+            {
+                perror("Erreur lors de l'envoi du message ");
+                exit(EXIT_FAILURE);
+            }
+            wprintw(interface.infos->interieur, "\nAttente que les autres joueurs soient prets");
+            wrefresh(interface.infos->interieur);
+            if (recv(socket_serveur, &i, sizeof(int), 0) == -1)
+            {
+                perror("Erreur lors de reception du message");
+                exit(EXIT_FAILURE);
+            }
+            quitter = true;
+            i = 10;
+        }
+    }
+    quitter = FALSE;
     pthread_create(&thread, NULL, &scenario, (void *)&arguments_scenario);
     pthread_create(&receive, NULL, &recevoir_unite, (void *)&arguments_receive);
     while (quitter == FALSE && jeu.vies > 0)
@@ -234,9 +259,10 @@ int main(int argc, char *argv[])
             quitter = true;
         else
         {
-            if (ch != -1){
+            if (ch != -1)
+            {
                 interface_main(&interface, &jeu, ch, &socket_serveur2);
-           }
+            }
         }
     }
 
@@ -253,7 +279,8 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    for (i = 0; i < 15; ++i) {
+    for (i = 0; i < 15; ++i)
+    {
         supprimer_liste_adj(&jeu.liste[i]);
     }
 
