@@ -59,7 +59,7 @@ void *scenario(void *args)
 
     interface_message(arguments->interface, jeu.description);
 
-    while ((int)type != 4 || jeu.vies > 0)
+    while ((int)type != 4)
     {
         if (recv(arguments->socket, &type, sizeof(unsigned char), 0) == -1)
         {
@@ -82,16 +82,18 @@ void *scenario(void *args)
                 perror("Erreur lors de la lecture de la taille du message ");
                 exit(EXIT_FAILURE);
             }
+            if (jeu.vies > 0)
+            {
+                /* Initialise unite (comme ce sont des unités créées par le scénario, on les fait spawn au spawn Ordinateur = 0) */
+                initialiser_unite(&unite, donnees);
+                unite.position[0] = jeu.spawn[0][0];
+                unite.position[1] = jeu.spawn[0][1];
 
-            /* Initialise unite (comme ce sont des unités créées par le scénario, on les fait spawn au spawn Ordinateur = 0) */
-            initialiser_unite(&unite, donnees);
-            unite.position[0] = jeu.spawn[0][0];
-            unite.position[1] = jeu.spawn[0][1];
-
-            /* prépare les arguments à passer au thread */
-            arg_unite.unite = unite;
-            arg_unite.interface = arguments->interface;
-            pthread_create(&unite.thread, NULL, spawn_unite, (void *)&arg_unite);
+                /* prépare les arguments à passer au thread */
+                arg_unite.unite = unite;
+                arg_unite.interface = arguments->interface;
+                pthread_create(&unite.thread, NULL, spawn_unite, (void *)&arg_unite);
+            }
         }
     }
     free(arguments);
@@ -215,17 +217,12 @@ int main(int argc, char *argv[])
                 COLS, LINES, LARGEUR, HAUTEUR);
         exit(EXIT_FAILURE);
     }
-    /*Arguments pour le scénario*/
-    arguments_scenario.socket = socket_serveur;
-    arguments_scenario.interface = &interface;
 
-    /*Arguments pour la reception d'ennemi d'un autre adversaire*/
-    arguments_receive.socket = socket_serveur2;
-    arguments_receive.interface = &interface;
     /*Le joueur doit se mettre pret pour que la partie puisse commencer*/
     interface_main(&interface, &jeu, ch, &socket_serveur2);
     wprintw(interface.infos->interieur, "\nAppuiez sur la touche Entrer pour vous mettre pret");
     wrefresh(interface.infos->interieur);
+
     while (quitter == FALSE)
     {
         ch = getch();
@@ -248,10 +245,23 @@ int main(int argc, char *argv[])
             i = 10;
         }
     }
+
     quitter = FALSE;
+
+    /*Arguments pour le scénario*/
+
+    arguments_scenario.socket = socket_serveur;
+    arguments_scenario.interface = &interface;
+
+    /*Arguments pour la reception d'ennemi d'un autre adversaire*/
+
+    arguments_receive.socket = socket_serveur2;
+    arguments_receive.interface = &interface;
+
     pthread_create(&thread, NULL, &scenario, (void *)&arguments_scenario);
     pthread_create(&receive, NULL, &recevoir_unite, (void *)&arguments_receive);
-    while (quitter == FALSE && jeu.vies > 0)
+
+    while (quitter == FALSE)
     {
         ch = getch();
 

@@ -40,9 +40,22 @@ void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t *interface)
         position_initiale = unite->position[0];
         if (trouver_chemin(jeu->carte, unite) == 1)
         {
-            jeu->vies--;
-            interface_MAJEtat(interface, jeu);
-            break;
+            if (jeu->vies - 1 == 0) /*On test si le joueur va etre à 0 HP*/
+            {
+                jeu->vies--;
+                pthread_mutex_lock(&interface->mutex);
+                interface_MAJEtat(interface, jeu);
+                wprintw(interface->infos->interieur, "\nGAME OVER appuiez sur q pour quitter");
+                wrefresh(interface->infos->interieur);
+                pthread_mutex_unlock(&interface->mutex);
+            }
+            else if (jeu->vies > 0)
+            {
+                jeu->vies--;
+                pthread_mutex_lock(&interface->mutex);
+                interface_MAJEtat(interface, jeu);
+                pthread_mutex_unlock(&interface->mutex);
+            }
         }
 
         /* Si la nouvelle position est différente de la position initiale (si l'unité a changé de ligne)*/
@@ -89,6 +102,8 @@ void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t *interface)
     jeu->argent += unite->cout;
     pthread_mutex_lock(&interface->mutex);
     interface_MAJEtat(interface, jeu);
+    interface_MAJOutils(interface, jeu);
+    interface_MAJAttaques(interface, jeu);
     pthread_mutex_unlock(&interface->mutex);
 }
 

@@ -115,14 +115,14 @@ void *spawn_tour(void *args)
 {
     arg_tour *arg = (arg_tour *)args;
     tour_t tour = *arg->tour;
-    int i=0;
-    while (1)
+    int i = 0;
+    while (arg->jeu->vies != 0)
     {
         tour_tire(&tour, arg->jeu);
         usleep(tour.vitesse * 1000);
     }
-    /*detruire_tour(arg->tour);*/
-    return NULL;
+
+    pthread_exit(NULL);
 }
 
 /* Desallocation mémoire d'une tour */

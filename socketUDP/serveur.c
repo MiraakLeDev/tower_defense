@@ -244,7 +244,7 @@ void *thread_partie(void *arg_cellule)
         pthread_create(&thread_j[cmp], NULL, thread_send, (void *)&ennemi[cmp]);
     }
 
-    /*On attend que tous les clients soient pret*/
+    /*On attend que tous les clients soient prets*/
     for (i = 0; i < MAX_JOUEURS; i++)
     {
         if (recv(cellule->socketClient[i][0], &pret, sizeof(int), 0) == -1)
