@@ -86,9 +86,9 @@ void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t *interface)
         wrefresh(interface->carte->interieur);
         pthread_mutex_unlock(&interface->mutex);
     }
+    jeu->argent += unite->cout;
     pthread_mutex_lock(&interface->mutex);
-    wprintw(interface->infos->interieur, "\nUnite meurt");
-    wrefresh(interface->infos->interieur);
+    interface_MAJEtat(interface, jeu);
     pthread_mutex_unlock(&interface->mutex);
 }
 
@@ -587,8 +587,6 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
     case OUTIL_TOUR_1:
         if ((jeu->carte[posY][posX] == CASE_VIDE) && (jeu->argent >= TOUR_1_COUT))
         {
-            wprintw(interface->infos->interieur, "\nok");
-            wrefresh(interface->infos->interieur);
             jeu->argent -= TOUR_1_COUT;
             mvwprintw(interface->carte->interieur, posY, posX, "A");
             initialiser_tour(&tour, 1, jeu, posY, posX);
@@ -599,15 +597,13 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
             interface_MAJAttaques(interface, jeu);
             if (pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour) != 0)
             {
-                printf("Problème création du thread tourelle1");
+                printf("Problème création du thread tourelle 1");
                 exit(EXIT_FAILURE);
             }
         }
         else
         {
             wprintw(interface->infos->interieur, "\nDesole, pas possible...");
-
-            wrefresh(interface->infos->interieur);
         }
         break;
     case OUTIL_TOUR_2:
@@ -640,14 +636,14 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
             initialiser_tour(&tour, 3, jeu, posY, posX);
             arg_tour.tour = &tour;
             arg_tour.jeu = jeu;
-            if (pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour) != 0)
-            {
-                printf("Problème création du thread tourelle3");
-                exit(EXIT_FAILURE);
-            }
             interface_MAJOutils(interface, jeu);
             interface_MAJEtat(interface, jeu);
             interface_MAJAttaques(interface, jeu);
+            if (pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour) != 0)
+            {
+                printf("Problème création du thread tourelle 3");
+                exit(EXIT_FAILURE);
+            }
         }
         else
         {
@@ -662,14 +658,14 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
             initialiser_tour(&tour, 4, jeu, posY, posX);
             arg_tour.tour = &tour;
             arg_tour.jeu = jeu;
-            if (pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour) != 0)
-            {
-                printf("Problème création du thread tourelle4");
-                exit(EXIT_FAILURE);
-            }
             interface_MAJOutils(interface, jeu);
             interface_MAJEtat(interface, jeu);
             interface_MAJAttaques(interface, jeu);
+            if (pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour) != 0)
+            {
+                printf("Problème création du thread tourelle 4");
+                exit(EXIT_FAILURE);
+            }
         }
         else
         {
@@ -684,14 +680,14 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
             initialiser_tour(&tour, 5, jeu, posY, posX);
             arg_tour.tour = &tour;
             arg_tour.jeu = jeu;
-            if (pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour) != 0)
-            {
-                printf("Problème création du thread tourelle5");
-                exit(EXIT_FAILURE);
-            }
             interface_MAJOutils(interface, jeu);
             interface_MAJEtat(interface, jeu);
             interface_MAJAttaques(interface, jeu);
+            if (pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour) != 0)
+            {
+                printf("Problème création du thread tourelle 5");
+                exit(EXIT_FAILURE);
+            }
         }
         else
         {
@@ -741,11 +737,6 @@ void interface_main(interface_t *interface, jeu_t *jeu, int c, int *socket_serve
         else if (fenetre_getcoordonnees(interface->carte, sourisX, sourisY, &posX, &posY))
         {
             interface_carte(interface, jeu, posX, posY);
-        }
-        else
-        {
-            wprintw(interface->infos->interieur, "\nElse");
-            wrefresh(interface->infos->interieur);
         }
         pthread_mutex_unlock(&interface->mutex);
     }

@@ -6,11 +6,11 @@
 
 jeu_t initialiser_jeu(){
     jeu_t jeu;
-    jeu.vies = 10;
+    jeu.vies = 30;
     jeu.argent = 2000;
-    jeu.adv[0] = 10;
-    jeu.adv[1] = 10;
-    jeu.adv[2] = 10;
+    jeu.adv[0] = jeu.vies;
+    jeu.adv[1] = jeu.vies;
+    jeu.adv[2] = jeu.vies;
 
     return jeu;
 }

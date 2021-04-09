@@ -236,7 +236,6 @@ int main(int argc, char *argv[])
         {
             if (ch != -1){
                 interface_main(&interface, &jeu, ch, &socket_serveur2);
-                /*wrefresh(interface.infos->interieur);*/
            }
         }
     }
@@ -258,7 +257,7 @@ int main(int argc, char *argv[])
         supprimer_liste_adj(&jeu.liste[i]);
     }
 
-    printf("Vous avez perdu !\n");
+    printf("Le jeu est terminé.\n");
 
     return EXIT_SUCCESS;
 }

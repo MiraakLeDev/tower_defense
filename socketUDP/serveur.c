@@ -84,9 +84,6 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
         {
             if (send(cellule->socketClient[i][0], &type, sizeof(unsigned char), 0) == -1)
             {
-                if (errno == ENOTCONN){
-                    printf("caca");
-                }
                 perror("Erreur lors de l'envoi du message ");
                 exit(EXIT_FAILURE);
             }
@@ -103,9 +100,6 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
             {
                 if (send(cellule->socketClient[i][0], &msg, sizeof(char) * 255, 0) == -1)
                 {
-                    if (errno == ENOTCONN){
-                        printf("caca");
-                    }
                     perror("Erreur lors de l'envoi du message ");
                     exit(EXIT_FAILURE);
                 }
@@ -122,9 +116,6 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
             {
                 if (send(cellule->socketClient[i][0], &donnees, sizeof(unsigned int), 0) == -1)
                 {
-                    if (errno == ENOTCONN){
-                        printf("caca");
-                    }
                     perror("Erreur lors de l'envoi du message ");
                     exit(EXIT_FAILURE);
                 }
@@ -176,9 +167,9 @@ void *thread_partie(void *arg_cellule)
     char scenar_nom[MAX_CHAR + 10] = "scenarios/";
     cellule_tcp *cellule = (cellule_tcp *)arg_cellule;
     jeu_t jeu;
-    pthread_t thread_j[MAX_JOUEURS];
-    int i = 0, j = 0;
+    pthread_t thread_j[MAX_JOUEURS];            /* Un thread par joueur est dédié à écouter et relayer des unités entre les joueurs */
     arguments_ennemi ennemi[MAX_JOUEURS];
+    int i = 0, j = 0;
 
     jeu = initialiser_jeu();
 
@@ -238,6 +229,7 @@ void *thread_partie(void *arg_cellule)
         j = 0;
         for (i = 0; i < MAX_JOUEURS; i++)
         {
+            /* on ajute la socket des joueurs ennemis dans le tableau de sockets */
             if (ennemi[cmp].socket_joueur != cellule->socketClient[i][1])
             {
                 ennemi[cmp].socket_ennemi[j] = cellule->socketClient[i][1];
@@ -251,7 +243,6 @@ void *thread_partie(void *arg_cellule)
         }
         pthread_create(&thread_j[cmp], NULL, thread_send, (void *)&ennemi[cmp]);
     }
-
     read_scenar(&jeu, fichier, cellule);
     close(fichier);
     supprimer_cellule_tcp(liste_serveurs, cellule);
@@ -350,7 +341,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-            printf("Serveur : message recu '%d'.\n", requete.action);
+            printf("Serveur : message recu type = %d.\n", requete.action);
             /**** DEMANDE DE MAPS ****/
             if (requete.action == 1)
             {

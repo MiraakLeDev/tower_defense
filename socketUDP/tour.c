@@ -103,10 +103,9 @@ void tour_tire(tour_t *tour, jeu_t *jeu)
     cellule_unite *cellule_unite;
     for (i = 0; i < tour->taille_chemin; i++)
     {
-        afficher_liste_adj(&jeu->liste[tour->chemin[i][0]]);
         if ((cellule_unite = rechercher_cellule(&jeu->liste[tour->chemin[i][0]], tour->chemin[i][1])) != NULL)
         {
-            cellule_unite->unite->vie -= 100;
+            cellule_unite->unite->vie -= tour->degat_max;
         }
     }
 }
@@ -116,10 +115,9 @@ void *spawn_tour(void *args)
 {
     arg_tour *arg = (arg_tour *)args;
     tour_t tour = *arg->tour;
-
+    int i=0;
     while (1)
     {
-
         tour_tire(&tour, arg->jeu);
         usleep(tour.vitesse * 1000);
     }
