@@ -86,6 +86,10 @@ void deplacement_unite(unite_t *unite, jeu_t *jeu, interface_t *interface)
         wrefresh(interface->carte->interieur);
         pthread_mutex_unlock(&interface->mutex);
     }
+    pthread_mutex_lock(&interface->mutex);
+    wprintw(interface->infos->interieur, "\nUnite meurt");
+    wrefresh(interface->infos->interieur);
+    pthread_mutex_unlock(&interface->mutex);
 }
 
 void interface_message(interface_t *interface, char *msg)
@@ -583,19 +587,27 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
     case OUTIL_TOUR_1:
         if ((jeu->carte[posY][posX] == CASE_VIDE) && (jeu->argent >= TOUR_1_COUT))
         {
+            wprintw(interface->infos->interieur, "\nok");
+            wrefresh(interface->infos->interieur);
             jeu->argent -= TOUR_1_COUT;
             mvwprintw(interface->carte->interieur, posY, posX, "A");
             initialiser_tour(&tour, 1, jeu, posY, posX);
             arg_tour.tour = &tour;
             arg_tour.jeu = jeu;
-            pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour);
             interface_MAJOutils(interface, jeu);
             interface_MAJEtat(interface, jeu);
             interface_MAJAttaques(interface, jeu);
+            if (pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour) != 0)
+            {
+                printf("Problème création du thread tourelle1");
+                exit(EXIT_FAILURE);
+            }
         }
         else
         {
             wprintw(interface->infos->interieur, "\nDesole, pas possible...");
+
+            wrefresh(interface->infos->interieur);
         }
         break;
     case OUTIL_TOUR_2:
@@ -606,10 +618,14 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
             initialiser_tour(&tour, 2, jeu, posY, posX);
             arg_tour.tour = &tour;
             arg_tour.jeu = jeu;
-            pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour);
             interface_MAJOutils(interface, jeu);
             interface_MAJEtat(interface, jeu);
             interface_MAJAttaques(interface, jeu);
+            if (pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour) != 0)
+            {
+                printf("Problème création du thread tourelle2");
+                exit(EXIT_FAILURE);
+            }
         }
         else
         {
@@ -624,7 +640,11 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
             initialiser_tour(&tour, 3, jeu, posY, posX);
             arg_tour.tour = &tour;
             arg_tour.jeu = jeu;
-            pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour);
+            if (pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour) != 0)
+            {
+                printf("Problème création du thread tourelle3");
+                exit(EXIT_FAILURE);
+            }
             interface_MAJOutils(interface, jeu);
             interface_MAJEtat(interface, jeu);
             interface_MAJAttaques(interface, jeu);
@@ -642,7 +662,11 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
             initialiser_tour(&tour, 4, jeu, posY, posX);
             arg_tour.tour = &tour;
             arg_tour.jeu = jeu;
-            pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour);
+            if (pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour) != 0)
+            {
+                printf("Problème création du thread tourelle4");
+                exit(EXIT_FAILURE);
+            }
             interface_MAJOutils(interface, jeu);
             interface_MAJEtat(interface, jeu);
             interface_MAJAttaques(interface, jeu);
@@ -660,7 +684,11 @@ void interface_carte(interface_t *interface, jeu_t *jeu, int posX, int posY)
             initialiser_tour(&tour, 5, jeu, posY, posX);
             arg_tour.tour = &tour;
             arg_tour.jeu = jeu;
-            pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour);
+            if (pthread_create(&tour.thread, NULL, spawn_tour, (void *)&arg_tour) != 0)
+            {
+                printf("Problème création du thread tourelle5");
+                exit(EXIT_FAILURE);
+            }
             interface_MAJOutils(interface, jeu);
             interface_MAJEtat(interface, jeu);
             interface_MAJAttaques(interface, jeu);
@@ -714,72 +742,10 @@ void interface_main(interface_t *interface, jeu_t *jeu, int c, int *socket_serve
         {
             interface_carte(interface, jeu, posX, posY);
         }
-        pthread_mutex_unlock(&interface->mutex);
-    }
-    else
-    {
-        /* Gestion du clavier : à modifier pour le projet */
-        pthread_mutex_lock(&interface->mutex);
-        switch (c)
+        else
         {
-        case '1':
-        case '2':
-        case '3':
-            /* Supprime une vie à un adversaire */
-            if (jeu->adv[c - '1'] != 0)
-            {
-                jeu->adv[c - '1']--;
-                interface_MAJEtat(interface, jeu);
-            }
-            break;
-        case 'V':
-        case 'v':
-            /* Supprime une vie au joueur */
-            if (jeu->vies > 0)
-            {
-                jeu->vies--;
-                interface_MAJEtat(interface, jeu);
-            }
-            break;
-        case '$':
-            /* Ajoute de l'argent */
-            jeu->argent += 10;
-            if (jeu->argent > 99999)
-                jeu->argent = 99999;
-            interface_MAJEtat(interface, jeu);
-            interface_MAJOutils(interface, jeu);
-            interface_MAJAttaques(interface, jeu);
-            break;
-        case 'U':
-        case 'u':
-            /* Avance l'état du unfreeze */
-            if (jeu->unfreeze < 10)
-            {
-                jeu->unfreeze++;
-                interface_MAJEtat(interface, jeu);
-                interface_MAJOutils(interface, jeu);
-            }
-            break;
-        case 'F':
-        case 'f':
-            /* Avance l'état du freeze */
-            if (jeu->freeze < 10)
-            {
-                jeu->freeze++;
-                interface_MAJEtat(interface, jeu);
-                interface_MAJAttaques(interface, jeu);
-            }
-            break;
-        case 27:
-            /* Touche ECHAP : annule l'outil sélectionné */
-            interface->outilsel = OUTIL_NONE;
-            interface_MAJOutils(interface, jeu);
-            break;
-        default:
-            /* Utile en mode DEBUG si on souhaite afficher le caractère associé à la touche pressée */
-            wprintw(interface->infos->interieur, "\nTouche %d pressee", c);
+            wprintw(interface->infos->interieur, "\nElse");
             wrefresh(interface->infos->interieur);
-            break;
         }
         pthread_mutex_unlock(&interface->mutex);
     }

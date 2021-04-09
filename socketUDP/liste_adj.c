@@ -66,20 +66,26 @@ void supprimer_cellule_unite(liste_adj *liste, unite_t *unite)
         exit(EXIT_FAILURE);
     }
     pthread_mutex_lock(&liste->mutex_liste);
-    if(liste->premier != NULL) {
+    if (liste->premier != NULL)
+    {
         cellule_unite *cellule = liste->premier;
         cellule_unite *atrouver;
-        if (cellule->unite == unite) {
+        if (cellule->unite == unite)
+        {
             liste->premier = cellule->suivant;
             free(cellule);
         }
 
-        while (cellule->suivant != NULL) {
-            if (cellule->suivant->unite == unite) {
+        while (cellule->suivant != NULL)
+        {
+            if (cellule->suivant->unite == unite)
+            {
                 atrouver = cellule->suivant;
                 cellule->suivant = atrouver->suivant;
                 free(atrouver);
-            } else {
+            }
+            else
+            {
                 cellule = cellule->suivant;
             }
         }
@@ -94,24 +100,30 @@ cellule_unite *retirer_cellule(liste_adj *liste, unite_t *unite)
         exit(EXIT_FAILURE);
     }
     pthread_mutex_lock(&liste->mutex_liste);
-    if(liste->premier != NULL) {
+    if (liste->premier != NULL)
+    {
         cellule_unite *cellule = liste->premier;
         cellule_unite *atrouver;
-        if (cellule->unite == unite) {
+        if (cellule->unite == unite)
+        {
             liste->premier = cellule->suivant;
 
             pthread_mutex_unlock(&liste->mutex_liste);
             return cellule;
         }
 
-        while (cellule->suivant != NULL) {
-            if (cellule->suivant->unite == unite) {
+        while (cellule->suivant != NULL)
+        {
+            if (cellule->suivant->unite == unite)
+            {
                 atrouver = cellule->suivant;
                 cellule->suivant = atrouver->suivant;
 
                 pthread_mutex_unlock(&liste->mutex_liste);
                 return atrouver;
-            } else {
+            }
+            else
+            {
                 cellule = cellule->suivant;
             }
         }
@@ -122,13 +134,16 @@ cellule_unite *retirer_cellule(liste_adj *liste, unite_t *unite)
 
 cellule_unite *rechercher_cellule(liste_adj *liste, int position)
 {
-    if (liste == NULL) {
+    if (liste == NULL)
+    {
         exit(EXIT_FAILURE);
     }
     pthread_mutex_lock(&liste->mutex_liste);
-    if (liste->premier != NULL){
+    if (liste->premier != NULL)
+    {
         cellule_unite *cellule = liste->premier;
-        if (cellule->unite->position[1] == (unsigned char)position) {
+        if (cellule->unite->position[1] == (unsigned char)position)
+        {
             pthread_mutex_unlock(&liste->mutex_liste);
             return cellule;
         }
@@ -150,9 +165,11 @@ cellule_unite *rechercher_cellule(liste_adj *liste, int position)
     return NULL;
 }
 
-void supprimer_liste_adj(liste_adj *liste){
+void supprimer_liste_adj(liste_adj *liste)
+{
     pthread_mutex_lock(&liste->mutex_liste);
-    if (liste->premier != NULL){
+    if (liste->premier != NULL)
+    {
         cellule_unite *cellule = liste->premier;
         cellule_unite *tmp;
         while (cellule != NULL)

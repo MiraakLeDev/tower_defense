@@ -6,7 +6,7 @@
 #include "liste_adj.h"
 
 /* Permet de trouver toutes les cases CHEMIN dans le rayon de portée de la tour */
-void trouver_case(tour_t* tour, jeu_t* jeu)
+void trouver_case(tour_t *tour, jeu_t *jeu)
 {
     int cmp = 0, portee = 0, i = 0, j = 0, x = 0, y = 0;
 
@@ -49,45 +49,45 @@ void trouver_case(tour_t* tour, jeu_t* jeu)
 }
 
 /* Initialise une tour en fonction de son type et de sa position en X et Y */
-void initialiser_tour(tour_t* tour, int type, jeu_t* jeu, int X, int Y)
+void initialiser_tour(tour_t *tour, int type, jeu_t *jeu, int X, int Y)
 {
     int i = 0;
     switch (type)
     {
-        case 1:
-            tour->cout = TOUR_1_COUT;
-            tour->degat_min = TOUR_1_TIR_MIN;
-            tour->degat_max = TOUR_1_TIR_MAX;
-            tour->portee = TOUR_1_PORTEE;
-            tour->vitesse = TOUR_1_VITESSE;
-            break;
-        case 2:
-            tour->cout = TOUR_2_COUT;
-            tour->degat_min = TOUR_2_TIR_MIN;
-            tour->degat_max = TOUR_2_TIR_MAX;
-            tour->portee = TOUR_2_PORTEE;
-            tour->vitesse = TOUR_2_VITESSE;
-            break;
-        case 3:
-            tour->cout = TOUR_3_COUT;
-            tour->degat_min = TOUR_3_TIR_MIN;
-            tour->degat_max = TOUR_3_TIR_MAX;
-            tour->portee = TOUR_3_PORTEE;
-            tour->vitesse = TOUR_3_VITESSE;
-            break;
-        case 4:
-            tour->cout = TOUR_4_COUT;
-            tour->degat_min = TOUR_4_TIR_MIN;
-            tour->degat_max = TOUR_4_TIR_MAX;
-            tour->portee = TOUR_4_PORTEE;
-            tour->vitesse = TOUR_4_VITESSE;
-            break;
-        case 5:
-            tour->cout = TOUR_5_COUT;
-            tour->degat_min = TOUR_5_TIR_MIN;
-            tour->degat_max = TOUR_5_TIR_MAX;
-            tour->portee = TOUR_5_PORTEE;
-            tour->vitesse = TOUR_5_VITESSE;
+    case 1:
+        tour->cout = TOUR_1_COUT;
+        tour->degat_min = TOUR_1_TIR_MIN;
+        tour->degat_max = TOUR_1_TIR_MAX;
+        tour->portee = TOUR_1_PORTEE;
+        tour->vitesse = TOUR_1_VITESSE;
+        break;
+    case 2:
+        tour->cout = TOUR_2_COUT;
+        tour->degat_min = TOUR_2_TIR_MIN;
+        tour->degat_max = TOUR_2_TIR_MAX;
+        tour->portee = TOUR_2_PORTEE;
+        tour->vitesse = TOUR_2_VITESSE;
+        break;
+    case 3:
+        tour->cout = TOUR_3_COUT;
+        tour->degat_min = TOUR_3_TIR_MIN;
+        tour->degat_max = TOUR_3_TIR_MAX;
+        tour->portee = TOUR_3_PORTEE;
+        tour->vitesse = TOUR_3_VITESSE;
+        break;
+    case 4:
+        tour->cout = TOUR_4_COUT;
+        tour->degat_min = TOUR_4_TIR_MIN;
+        tour->degat_max = TOUR_4_TIR_MAX;
+        tour->portee = TOUR_4_PORTEE;
+        tour->vitesse = TOUR_4_VITESSE;
+        break;
+    case 5:
+        tour->cout = TOUR_5_COUT;
+        tour->degat_min = TOUR_5_TIR_MIN;
+        tour->degat_max = TOUR_5_TIR_MAX;
+        tour->portee = TOUR_5_PORTEE;
+        tour->vitesse = TOUR_5_VITESSE;
         break;
     }
     tour->taille_chemin = 0;
@@ -97,13 +97,16 @@ void initialiser_tour(tour_t* tour, int type, jeu_t* jeu, int X, int Y)
 }
 
 /* Fais tirer une tour sur les ennemis se trouvant dans sa portée */
-void tour_tire(tour_t *tour,jeu_t * jeu)
+void tour_tire(tour_t *tour, jeu_t *jeu)
 {
     int i = 0;
+    cellule_unite *cellule_unite;
     for (i = 0; i < tour->taille_chemin; i++)
     {
-         if (rechercher_cellule(&jeu->liste[tour->chemin[i][0]], tour->chemin[i][1]) != NULL){
-            printf("trouvé !");
+        afficher_liste_adj(&jeu->liste[tour->chemin[i][0]]);
+        if ((cellule_unite = rechercher_cellule(&jeu->liste[tour->chemin[i][0]], tour->chemin[i][1])) != NULL)
+        {
+            cellule_unite->unite->vie -= 100;
         }
     }
 }
@@ -116,6 +119,7 @@ void *spawn_tour(void *args)
 
     while (1)
     {
+
         tour_tire(&tour, arg->jeu);
         usleep(tour.vitesse * 1000);
     }
@@ -124,13 +128,12 @@ void *spawn_tour(void *args)
 }
 
 /* Desallocation mémoire d'une tour */
-void detruire_tour(tour_t* tour){
+void detruire_tour(tour_t *tour)
+{
     int i = 0;
-    for (i = 0; i < tour->taille_chemin; ++i) {
+    for (i = 0; i < tour->taille_chemin; ++i)
+    {
         if (tour->chemin[i] != NULL)
             free(tour->chemin[i]);
     }
 }
-
-
-
