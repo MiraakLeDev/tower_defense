@@ -84,6 +84,9 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
         {
             if (send(cellule->socketClient[i][0], &type, sizeof(unsigned char), 0) == -1)
             {
+                if (errno == ENOTCONN){
+                    printf("caca");
+                }
                 perror("Erreur lors de l'envoi du message ");
                 exit(EXIT_FAILURE);
             }
@@ -100,6 +103,9 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
             {
                 if (send(cellule->socketClient[i][0], &msg, sizeof(char) * 255, 0) == -1)
                 {
+                    if (errno == ENOTCONN){
+                        printf("caca");
+                    }
                     perror("Erreur lors de l'envoi du message ");
                     exit(EXIT_FAILURE);
                 }
@@ -116,6 +122,9 @@ void read_scenar(jeu_t *jeu, int fichier, cellule_tcp *cellule)
             {
                 if (send(cellule->socketClient[i][0], &donnees, sizeof(unsigned int), 0) == -1)
                 {
+                    if (errno == ENOTCONN){
+                        printf("caca");
+                    }
                     perror("Erreur lors de l'envoi du message ");
                     exit(EXIT_FAILURE);
                 }
@@ -217,7 +226,6 @@ void *thread_partie(void *arg_cellule)
             perror("Erreur lors de la demande de connexion ");
             exit(EXIT_FAILURE);
         }
-
         cellule->place_libre--;
         cmp--;
     }
@@ -236,7 +244,6 @@ void *thread_partie(void *arg_cellule)
                 j++;
             }
         }
-
         if (send(cellule->socketClient[cmp][0], (void *)&jeu, sizeof(jeu_t), 0) == -1)
         {
             perror("Erreur lors de l'envoi du message ");

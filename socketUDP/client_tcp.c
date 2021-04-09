@@ -56,6 +56,9 @@ void *scenario(void *args)
     arg_unit arg_unite;
     unite_t unite;
     int i = 0;
+
+    interface_message(arguments->interface, jeu.description);
+
     while ((int)type != 4 || jeu.vies > 0)
     {
         if (recv(arguments->socket, &type, sizeof(unsigned char), 0) == -1)
@@ -192,9 +195,6 @@ int main(int argc, char *argv[])
         jeu.liste[i] = initialiser_liste_adj();
     }
 
-    printf("Récupération de la map\n");
-    printf("description :\n %s\n", jeu.description);
-
     /* Initialisation de ncurses */
     ncurses_initialiser();
     ncurses_souris();
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
 
     pthread_create(&thread, NULL, &scenario, (void *)&arguments_scenario);
     pthread_create(&receive, NULL, &recevoir_unite, (void *)&arguments_receive);
-    while (quitter == FALSE)
+    while (quitter == FALSE && jeu.vies > 0)
     {
         ch = getch();
 
@@ -234,8 +234,10 @@ int main(int argc, char *argv[])
             quitter = true;
         else
         {
-            interface_main(&interface, &jeu, ch, &socket_serveur2);
-            wrefresh(interface.infos->interieur);
+            if (ch != -1){
+                interface_main(&interface, &jeu, ch, &socket_serveur2);
+                /*wrefresh(interface.infos->interieur);*/
+           }
         }
     }
 
@@ -245,12 +247,12 @@ int main(int argc, char *argv[])
     /* Arrêt de ncurses */
     ncurses_stopper();
 
-    /* Fermeture de la socket
+    /* Fermeture de la socket */
     if (close(socket_serveur) == -1)
     {
         perror("Erreur lors de la fermeture de la socket ");
         exit(EXIT_FAILURE);
-    }*/
+    }
 
     for (i = 0; i < 15; ++i) {
         supprimer_liste_adj(&jeu.liste[i]);

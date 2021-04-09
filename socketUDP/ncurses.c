@@ -13,6 +13,7 @@ void ncurses_initialiser() {
   keypad(stdscr, TRUE);	/* Active les touches specifiques */
   refresh();            /* Met a jour l'affichage */
   curs_set(FALSE);      /* Masque le curseur */
+  timeout(1000);
 }
 
 /**

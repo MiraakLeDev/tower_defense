@@ -5,7 +5,6 @@
 #include "liste_adj.h"
 typedef struct
 {
-    char nom[5];
     unsigned char position[2]; /*Position de la tour*/
     unsigned int cout;         /* Cout de la tour */
     unsigned int degat_min;    /*Degat minimum de la tour*/

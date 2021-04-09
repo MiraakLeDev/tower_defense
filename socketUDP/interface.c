@@ -700,8 +700,8 @@ void interface_main(interface_t *interface, jeu_t *jeu, int c, int *socket_serve
 
     if ((c == KEY_MOUSE) && (souris_getpos(&sourisX, &sourisY, NULL) == OK))
     {
+        pthread_mutex_lock(&interface->mutex);
         /* Gestion des actions de la souris */
-
         if (fenetre_getcoordonnees(interface->outils, sourisX, sourisY, &posX, &posY))
         {
             interface_outils(interface, jeu, posX, posY);
@@ -714,10 +714,12 @@ void interface_main(interface_t *interface, jeu_t *jeu, int c, int *socket_serve
         {
             interface_carte(interface, jeu, posX, posY);
         }
+        pthread_mutex_unlock(&interface->mutex);
     }
     else
     {
         /* Gestion du clavier : à modifier pour le projet */
+        pthread_mutex_lock(&interface->mutex);
         switch (c)
         {
         case '1':
@@ -779,5 +781,6 @@ void interface_main(interface_t *interface, jeu_t *jeu, int c, int *socket_serve
             wrefresh(interface->infos->interieur);
             break;
         }
+        pthread_mutex_unlock(&interface->mutex);
     }
 }
